@@ -1,8 +1,30 @@
 import { Router } from 'express';
 import { getAllTests, getTestByKey, getTestsByFolder, getTestsByTags, getAllTags, getFolderTree, updateTestOverrides } from '../db/models/tests.js';
 import { logger } from '../utils/logger.js';
+import type { TestDefinition } from '../types/index.js';
 
 const router = Router();
+
+/**
+ * Transform internal TestDefinition to API response format
+ * Flattens meta fields to top level for easier frontend consumption
+ */
+function toApiFormat(test: TestDefinition) {
+  return {
+    id: test.id,
+    testKey: test.testKey,
+    friendlyName: test.meta.friendlyName,
+    description: test.meta.description,
+    folderPath: test.folderPath,
+    specPath: test.specPath,
+    tags: test.meta.tags || [],
+    constants: test.constants,
+    overrides: test.overrides,
+    isActive: test.active,
+    createdAt: test.createdAt,
+    updatedAt: test.updatedAt,
+  };
+}
 
 /**
  * GET /api/tests
@@ -26,7 +48,7 @@ router.get('/', (req, res) => {
     }
 
     res.json({
-      tests,
+      tests: tests.map(toApiFormat),
       count: tests.length,
     });
   } catch (error) {
@@ -77,7 +99,7 @@ router.get('/:testKey', (req, res) => {
       return;
     }
 
-    res.json(test);
+    res.json(toApiFormat(test));
   } catch (error) {
     logger.error('Error fetching test:', error);
     res.status(500).json({ error: 'Failed to fetch test' });

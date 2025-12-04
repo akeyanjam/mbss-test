@@ -1,17 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* No dark variant anymore */
-
 @theme inline {
-  /* Tighter global radius & spacing */
-  --radius: 0.375rem;            /* ~6px, down from 0.625rem */
-  --spacing: 0.875rem;           /* slightly tighter default gap/space */
-
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
-  --radius-xl: calc(var(--radius) + 6px);
+  --radius: 0.5rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -46,63 +41,61 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Bank of America–style light theme */
+/* Blue theme - clean professional look */
 :root {
-  /* Core tokens */
-  --radius: 0.375rem; /* keep in sync with @theme */
+  --radius: 0.5rem;
   
   /* Backgrounds / surfaces */
-  --background: #f4f6f9;            /* light neutral app background */
-  --foreground: #102a43;            /* deep navy text */
+  --background: #f8fafc;            /* slate-50 */
+  --foreground: #0f172a;            /* slate-900 */
 
-  --card: #ffffff;                  /* white cards */
-  --card-foreground: #102a43;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
 
   --popover: #ffffff;
-  --popover-foreground: #102a43;
+  --popover-foreground: #0f172a;
 
-  /* Brand colors (BoA-like red/blue) */
-  --primary: #c41230;               /* Bank of America red */
+  /* Primary - Blue */
+  --primary: #2563eb;               /* blue-600 */
   --primary-foreground: #ffffff;
 
-  --secondary: #052f5f;             /* deep BoA navy */
-  --secondary-foreground: #ffffff;
+  /* Secondary - Slate */
+  --secondary: #f1f5f9;             /* slate-100 */
+  --secondary-foreground: #0f172a;
 
-  /* Muted / subtle UI */
-  --muted: #e5e7eb;                 /* gray-200 */
-  --muted-foreground: #4b5563;      /* gray-600 */
+  /* Muted */
+  --muted: #f1f5f9;                 /* slate-100 */
+  --muted-foreground: #64748b;      /* slate-500 */
 
-  --accent: #e5e7eb;                /* subtle hover / accent */
-  --accent-foreground: #052f5f;
+  /* Accent */
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
 
-  /* Status / destructive */
-  --destructive: #b91c1c;           /* red-700 */
+  /* Destructive */
+  --destructive: #dc2626;           /* red-600 */
   --destructive-foreground: #ffffff;
 
-  /* Borders / inputs / focus */
-  --border: #d1d5db;                /* gray-300 */
-  --input: #d1d5db;
-  --ring: #c41230;                  /* red focus ring */
+  /* Borders / inputs */
+  --border: #e2e8f0;                /* slate-200 */
+  --input: #e2e8f0;
+  --ring: #2563eb;                  /* blue-600 */
 
-  /* Charts (stay on-brand, but distinct) */
-  --chart-1: #c41230;               /* BoA red */
-  --chart-2: #052f5f;               /* BoA navy */
-  --chart-3: #0f766e;               /* teal accent */
-  --chart-4: #f97316;               /* orange */
-  --chart-5: #6366f1;               /* indigo */
+  /* Charts */
+  --chart-1: #2563eb;
+  --chart-2: #16a34a;
+  --chart-3: #ea580c;
+  --chart-4: #8b5cf6;
+  --chart-5: #06b6d4;
 
-  /* Sidebar (nav) */
-  --sidebar: #052f5f;               /* solid navy sidebar */
-  --sidebar-foreground: #e5e7eb;    /* light gray text */
-
-  --sidebar-primary: #c41230;       /* red for active nav item / pill */
+  /* Sidebar */
+  --sidebar: #1e293b;               /* slate-800 */
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #3b82f6;       /* blue-500 */
   --sidebar-primary-foreground: #ffffff;
-
-  --sidebar-accent: #244e86;        /* lighter navy hover */
-  --sidebar-accent-foreground: #e5e7eb;
-
-  --sidebar-border: #001b3a;        /* dark navy divider */
-  --sidebar-ring: #c41230;          /* focus outline in nav */
+  --sidebar-accent: #334155;        /* slate-700 */
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #334155;
+  --sidebar-ring: #3b82f6;
 }
 
 /* Dark mode completely removed */
