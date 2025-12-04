@@ -1,0 +1,16 @@
+{
+  "users": [
+    {
+      "email": "qa.user@bofa.com",
+      "environments": ["SIT1", "SIT2"]
+    },
+    {
+      "email": "lead.user@bofa.com",
+      "environments": ["SIT1", "SIT2", "PROD"]
+    },
+    {
+      "email": "admin.user@bofa.com",
+      "environments": ["SIT1", "SIT2", "PROD"]
+    }
+  ]
+}

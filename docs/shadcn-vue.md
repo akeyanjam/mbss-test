@@ -1,0 +1,28 @@
+Installed components:
+- button
+- input
+- textarea
+- label
+- select
+- checkbox
+- radio-group
+- switch
+- dialog
+- sheet
+- dropdown-menu
+- popover
+- tooltip
+- card
+- table
+- tabs
+- accordion
+- badge
+- alert
+- progress
+- skeleton
+- separator
+- scroll-area
+- breadcrumb
+- avatar (for user email mini-profile if needed)
+- resizable (for left sidebar / test tree)
+- navigation-menu (optional alternate top-nav)

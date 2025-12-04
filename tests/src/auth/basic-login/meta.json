@@ -1,0 +1,10 @@
+{
+  "testKey": "basic-login",
+  "friendlyName": "Login Flow",
+  "description": "Test login with correct creds",
+  "tags": [
+    "auth",
+    "smoke",
+    "regression"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "shared": {
+    "timeoutMs": 30000,
+    "retryCount": 2
+  },
+  "environments": {
+    "SIT1": {
+      "baseUrl": "https://secure.pointofsale-sit1.bofa.com/sparta/auth/mbss/login/",
+      "email": "akj@outlook.com",
+      "password": ""
+    },
+    "SIT2": {
+      "baseUrl": "https://secure.pointofsale-sit2.bofa.com/sparta/auth/mbss/login/",
+      "email": "akj@outlook.com",
+      "password": ""
+    },
+    "PROD": {
+      "baseUrl": "https://secure.pointofsale.bofa.com/sparta/auth/mbss/login/",
+      "email": "akj@outlook.com",
+      "password": ""
+    }
+  }
+}

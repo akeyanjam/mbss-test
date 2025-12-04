@@ -1,0 +1,17 @@
+{
+  "name": "@mbss/portal",
+  "version": "1.0.0",
+  "description": "MBSS UI Test Dashboard & Runner - Monorepo",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node build-all.js",
+    "build:backend": "cd portal/backend && npm run build",
+    "build:tests": "cd tests && npm run build",
+    "dev:backend": "cd portal/backend && npm run dev:full",
+    "install:all": "cd portal/backend && npm install && cd ../../tests && npm install"
+  },
+  "keywords": ["playwright", "test-runner", "dashboard"],
+  "author": "MBSS QA Team",
+  "license": "UNLICENSED"
+}

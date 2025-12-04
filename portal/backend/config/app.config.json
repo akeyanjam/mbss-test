@@ -1,0 +1,8 @@
+{
+  "port": 3000,
+  "testRoot": "./dist-tests",
+  "artifactRoot": "../data/artifacts",
+  "databasePath": "../data/mbss.db",
+  "maxConcurrentRuns": 10,
+  "retentionDays": 30
+}

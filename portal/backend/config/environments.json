@@ -1,0 +1,19 @@
+{
+  "environments": [
+    {
+      "code": "SIT1",
+      "name": "System Integration Test 1",
+      "isProd": false
+    },
+    {
+      "code": "SIT2",
+      "name": "System Integration Test 2",
+      "isProd": false
+    },
+    {
+      "code": "PROD",
+      "name": "Production",
+      "isProd": true
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@mbss/tests",
+  "version": "1.0.0",
+  "description": "MBSS Playwright UI Tests",
+  "type": "module",
+  "scripts": {
+    "record": "node scripts/record.js",
+    "test": "playwright test",
+    "test:env": "node scripts/run.js",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "build": "node scripts/build-tests.js",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": [
+    "playwright",
+    "e2e",
+    "testing"
+  ],
+  "author": "MBSS QA Team",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@types/node": "^24.10.1",
+    "readline-sync": "^1.4.10",
+    "typescript": "^5.9.3"
+  }
+}

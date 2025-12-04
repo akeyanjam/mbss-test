@@ -1,0 +1,36 @@
+{
+  "name": "@mbss/backend",
+  "version": "1.0.0",
+  "description": "MBSS UI Test Dashboard & Runner - Backend Service",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "copy-tests": "node scripts/copy-tests.js",
+    "dev:full": "npm run copy-tests && npm run dev"
+  },
+  "keywords": ["playwright", "test-runner", "dashboard"],
+  "author": "alireza.keyanjam@bofa.com",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "cron-parser": "^5.4.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "playwright": "^1.57.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.1",
+    "nodemon": "^3.1.11",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
