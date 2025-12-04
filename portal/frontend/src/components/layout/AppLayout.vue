@@ -17,13 +17,15 @@ import {
   Calendar,
   LogOut,
   User,
+  LayoutDashboard,
 } from 'lucide-vue-next'
 
 const route = useRoute()
 const userStore = useUserStore()
 
 const navItems = [
-  { to: '/', label: 'Test Catalog', icon: FlaskConical },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/catalog', label: 'Test Catalog', icon: FlaskConical },
   { to: '/runs', label: 'Run History', icon: History },
   { to: '/schedules', label: 'Schedules', icon: Calendar },
 ]
@@ -45,53 +47,53 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-background flex flex-col">
-    <!-- Top Navigation Bar -->
-    <header class="h-14 border-b border-border bg-card shadow-sm shrink-0">
-      <div class="h-full px-4 flex items-center justify-between">
-        <!-- Logo & Brand -->
-        <div class="flex items-center gap-6">
-          <RouterLink to="/" class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded bg-primary flex items-center justify-center">
-              <FlaskConical class="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span class="font-semibold text-lg text-foreground">MBSS Test Portal</span>
-          </RouterLink>
+  <div class="min-h-screen bg-background flex">
+    <!-- Sidebar Navigation -->
+    <aside class="w-16 border-r border-border bg-card shrink-0 flex flex-col">
+      <!-- Logo -->
+      <div class="h-16 flex items-center justify-center border-b border-border">
+        <RouterLink to="/" class="flex items-center justify-center">
+          <div class="w-10 h-10 rounded bg-primary flex items-center justify-center">
+            <FlaskConical class="w-6 h-6 text-primary-foreground" />
+          </div>
+        </RouterLink>
+      </div>
 
-          <!-- Main Navigation -->
-          <nav class="flex items-center gap-1">
-            <RouterLink
-              v-for="item in navItems"
-              :key="item.to"
-              :to="item.to"
-              class="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              :class="[
-                route.path === item.to || (item.to !== '/' && route.path.startsWith(item.to))
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-              ]"
-            >
-              <component :is="item.icon" class="w-4 h-4" />
-              {{ item.label }}
-            </RouterLink>
-          </nav>
-        </div>
+      <!-- Navigation Items -->
+      <nav class="flex-1 flex flex-col gap-1 p-2">
+        <RouterLink
+          v-for="item in navItems"
+          :key="item.to"
+          :to="item.to"
+          class="flex items-center justify-center w-12 h-12 rounded-md transition-colors group relative"
+          :class="[
+            route.path === item.to || (item.to !== '/' && route.path.startsWith(item.to))
+              ? 'bg-primary text-primary-foreground'
+              : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+          ]"
+          :title="item.label"
+        >
+          <component :is="item.icon" class="w-5 h-5" />
+          <!-- Tooltip -->
+          <span class="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+            {{ item.label }}
+          </span>
+        </RouterLink>
+      </nav>
 
-        <!-- User Menu -->
+      <!-- User Menu at Bottom -->
+      <div class="p-2 border-t border-border">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" class="flex items-center gap-2 h-9">
-              <Avatar class="w-7 h-7">
+            <Button variant="ghost" class="w-12 h-12 p-0 rounded-md">
+              <Avatar class="w-8 h-8">
                 <AvatarFallback class="bg-secondary text-secondary-foreground text-xs">
                   {{ getInitials(userStore.email || '') }}
                 </AvatarFallback>
               </Avatar>
-              <span class="text-sm text-muted-foreground max-w-[200px] truncate">
-                {{ userStore.email }}
-              </span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" class="w-56">
+          <DropdownMenuContent side="right" align="end" class="w-56">
             <DropdownMenuLabel class="font-normal">
               <div class="flex flex-col space-y-1">
                 <p class="text-sm font-medium">Signed in as</p>
@@ -111,11 +113,19 @@ function handleLogout() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+    </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 overflow-auto">
-      <slot />
-    </main>
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Top Bar (Optional - for breadcrumbs or page title) -->
+      <header class="h-16 border-b border-border bg-card shrink-0 px-6 flex items-center">
+        <h1 class="text-xl font-semibold text-foreground">MBSS Test Portal</h1>
+      </header>
+
+      <!-- Main Content -->
+      <main class="flex-1 overflow-auto p-6">
+        <slot />
+      </main>
+    </div>
   </div>
 </template>

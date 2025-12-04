@@ -1,0 +1,10 @@
+{
+  "testKey": "fail-login",
+  "friendlyName": "failed Login Flow",
+  "description": "Test login with wrong creds",
+  "tags": [
+    "auth",
+    "smoke",
+    "regression"
+  ]
+}

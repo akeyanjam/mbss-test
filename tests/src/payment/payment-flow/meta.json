@@ -1,0 +1,9 @@
+{
+  "testKey": "payment-glow",
+  "friendlyName": "Basic Payment Flow",
+  "description": "Test payment flow",
+  "tags": [
+    "smoke",
+    "regression"
+  ]
+}

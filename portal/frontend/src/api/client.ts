@@ -230,5 +230,176 @@ export function getArtifactUrl(runId: string, testKey: string, file: string) {
   return `${API_BASE}/artifacts/${runId}/${encodeURIComponent(testKey)}/${file}`
 }
 
+// Dashboard
+export async function getDashboardOverview(days = 30) {
+  return request<{
+    activeRuns: {
+      running: number
+      queued: number
+      currentRuns: Array<{
+        id: string
+        environment: string
+        progress: { completed: number; total: number }
+        startedAt: string
+      }>
+    }
+    passRate: {
+      percentage: number
+      trend: number
+      period: string
+    }
+    totalExecutions: {
+      count: number
+      byEnvironment: Record<string, number>
+      trend: number
+    }
+    flakyTests: {
+      count: number
+      critical: number
+    }
+  }>('/api/dashboard/overview', { params: { days } })
+}
+
+export async function getExecutionHistory(filters?: {
+  environment?: string
+  status?: string
+  triggerType?: string
+  startDate?: string
+  endDate?: string
+  limit?: number
+  offset?: number
+}) {
+  return request<{
+    executions: Array<{
+      id: string
+      environment: string
+      status: string
+      triggerType: string
+      triggeredBy: string | null
+      startedAt: string | null
+      finishedAt: string | null
+      duration: number | null
+      summary: {
+        total: number
+        passed: number
+        failed: number
+        skipped: number
+      }
+    }>
+    total: number
+    limit: number
+    offset: number
+  }>('/api/dashboard/executions', {
+    params: filters as Record<string, string | number | undefined>,
+  })
+}
+
+export async function getExecutionTimeline(days = 30, environment?: string) {
+  return request<{
+    timeline: Array<{
+      date: string
+      passed: number
+      failed: number
+      skipped: number
+      total: number
+    }>
+    summary: {
+      totalRuns: number
+      totalPassed: number
+      totalFailed: number
+      totalSkipped: number
+    }
+  }>('/api/dashboard/timeline', {
+    params: { days, environment },
+  })
+}
+
+export async function getEnvironmentHealth(days = 30) {
+  return request<{
+    environments: Array<{
+      code: string
+      name: string
+      isProd: boolean
+      lastRun: {
+        id: string
+        status: string
+        finishedAt: string
+      } | null
+      stats: {
+        passRate: number
+        avgDuration: number
+        totalRuns: number
+        last24Hours: number
+      }
+      healthStatus: 'healthy' | 'warning' | 'critical'
+    }>
+  }>('/api/dashboard/environment-health', { params: { days } })
+}
+
+export async function getFlakyTests(options?: {
+  minExecutions?: number
+  days?: number
+  environment?: string
+}) {
+  return request<{
+    flakyTests: Array<{
+      testKey: string
+      testName: string
+      flakinessScore: number
+      executions: {
+        total: number
+        passed: number
+        failed: number
+      }
+      lastResults: string[]
+      environments: string[]
+      lastFailure: {
+        runId: string
+        date: string
+        environment: string
+        errorMessage: string | null
+      } | null
+    }>
+    total: number
+  }>('/api/dashboard/flaky-tests', {
+    params: options as Record<string, string | number | undefined>,
+  })
+}
+
+export async function getTestPerformance(options?: {
+  metric?: 'duration' | 'execution_count'
+  limit?: number
+  days?: number
+  environment?: string
+}) {
+  return request<{
+    tests: Array<{
+      testKey: string
+      testName: string
+      avgDuration: number
+      executions: number
+      trend: number
+    }>
+  }>('/api/dashboard/test-performance', {
+    params: options as Record<string, string | number | undefined>,
+  })
+}
+
+export async function getStatsByTag(options?: { days?: number; environment?: string }) {
+  return request<{
+    tags: Array<{
+      tag: string
+      executions: number
+      passed: number
+      failed: number
+      skipped: number
+      passRate: number
+      avgDuration: number
+    }>
+  }>('/api/dashboard/stats-by-tag', {
+    params: options as Record<string, string | number | undefined>,
+  })
+}
+
 // Export error class for handling
 export { ApiError }

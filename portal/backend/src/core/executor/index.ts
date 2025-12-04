@@ -5,6 +5,24 @@ import { fileURLToPath } from 'url';
 import { chromium, type Browser, type BrowserContext } from 'playwright';
 import { config } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
+
+/**
+ * Safely append to a file, creating directory and file if needed
+ */
+function safeAppendFileSync(filePath: string, data: string): void {
+  try {
+    const dir = dirname(filePath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    if (!existsSync(filePath)) {
+      writeFileSync(filePath, '');
+    }
+    appendFileSync(filePath, data);
+  } catch (error) {
+    logger.error(`Failed to append to file ${filePath}:`, error);
+  }
+}
 import { getTestByKey } from '../../db/models/tests.js';
 import { 
   updateRunStatus, 
@@ -288,6 +306,17 @@ async function runPlaywrightTest(
   // Compute cwd before entering Promise to avoid shadowing `resolve`
   const cwd = resolve(__dirname, '../../..');
   
+  // Ensure log directory exists and create log file
+  const logDir = dirname(logPath);
+  if (!existsSync(logDir)) {
+    mkdirSync(logDir, { recursive: true });
+  }
+  
+  // Create log file if it doesn't exist
+  if (!existsSync(logPath)) {
+    writeFileSync(logPath, '');
+  }
+  
   return new Promise((promiseResolve) => {
     const env = {
       ...process.env,
@@ -297,7 +326,7 @@ async function runPlaywrightTest(
     // Use npx playwright test
     const args = ['playwright', 'test', specPath, '--reporter=line', `--output=${outputDir}`];
 
-    appendFileSync(logPath, `[${new Date().toISOString()}] Executing: npx ${args.join(' ')}\n`);
+    safeAppendFileSync(logPath, `[${new Date().toISOString()}] Executing: npx ${args.join(' ')}\n`);
 
     const child: ChildProcess = spawn('npx', args, {
       env,
@@ -311,17 +340,17 @@ async function runPlaywrightTest(
     child.stdout?.on('data', (data: Buffer) => {
       const text = data.toString();
       stdout += text;
-      appendFileSync(logPath, text);
+      safeAppendFileSync(logPath, text);
     });
 
     child.stderr?.on('data', (data: Buffer) => {
       const text = data.toString();
       stderr += text;
-      appendFileSync(logPath, `[STDERR] ${text}`);
+      safeAppendFileSync(logPath, `[STDERR] ${text}`);
     });
 
     child.on('close', (code: number | null) => {
-      appendFileSync(logPath, `[${new Date().toISOString()}] Process exited with code ${code}\n`);
+      safeAppendFileSync(logPath, `[${new Date().toISOString()}] Process exited with code ${code}\n`);
       
       if (code === 0) {
         promiseResolve({ success: true });
@@ -334,7 +363,7 @@ async function runPlaywrightTest(
     });
 
     child.on('error', (error: Error) => {
-      appendFileSync(logPath, `[${new Date().toISOString()}] Process error: ${error.message}\n`);
+      safeAppendFileSync(logPath, `[${new Date().toISOString()}] Process error: ${error.message}\n`);
       promiseResolve({ success: false, error: error.message });
     });
   });

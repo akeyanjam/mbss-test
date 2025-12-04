@@ -7,6 +7,7 @@ import { runDiscoveryAndSync, testRootExists } from './core/discovery/index.js';
 import { startQueueProcessor, stopQueueProcessor } from './core/queue/index.js';
 import { startScheduler, stopScheduler } from './core/scheduler/index.js';
 import { startCleanupWorker, stopCleanupWorker } from './core/cleanup/index.js';
+import { cleanupOrphanedRuns } from './core/startup-cleanup.js';
 import apiRouter, { artifactsRouter } from './api/index.js';
 
 // Initialize Express app
@@ -48,6 +49,9 @@ async function start() {
     // Initialize database (runs migrations)
     logger.info('Initializing database...');
     initDatabase();
+
+    // Clean up orphaned runs from previous crashes/restarts
+    cleanupOrphanedRuns();
 
     // Check test root
     if (!testRootExists()) {

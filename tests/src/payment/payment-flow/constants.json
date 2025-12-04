@@ -1,0 +1,17 @@
+{
+  "shared": {
+    "timeoutMs": 30000,
+    "retryCount": 2
+  },
+  "environments": {
+    "SIT1": {
+      "baseUrl": "https://wwww.google.com"
+    },
+    "SIT2": {
+      "baseUrl": "https://secure.pointofsale-sit2.bofa.com/sparta/auth/mbss/login/"
+    },
+    "PROD": {
+      "baseUrl": "https://secure.pointofsale.bofa.com/sparta/auth/mbss/login/"
+    }
+  }
+}

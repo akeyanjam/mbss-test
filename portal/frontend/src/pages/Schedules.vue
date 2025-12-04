@@ -8,7 +8,6 @@ import type { Schedule } from '@/types'
 // Components
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -156,42 +155,40 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <div class="flex flex-col max-w-[1400px]">
     <!-- Header -->
-    <div class="border-b border-border bg-card px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-xl font-semibold text-foreground">Schedules</h1>
-          <p class="text-sm text-muted-foreground mt-0.5">
-            {{ schedules.length }} scheduled test runs
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            @click="fetchSchedules(true)"
-            :disabled="isRefreshing"
-          >
-            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isRefreshing }" />
-          </Button>
-          <Button @click="router.push('/schedules/new')">
-            <Plus class="w-4 h-4 mr-2" />
-            New Schedule
-          </Button>
-        </div>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">Schedules</h1>
+        <p class="text-muted-foreground mt-1">
+          {{ schedules.length }} scheduled test runs
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          @click="fetchSchedules(true)"
+          :disabled="isRefreshing"
+        >
+          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isRefreshing }" />
+        </Button>
+        <Button @click="router.push('/schedules/new')">
+          <Plus class="w-4 h-4 mr-2" />
+          New Schedule
+        </Button>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="flex-1 p-6">
+    <div v-if="isLoading" class="space-y-3">
       <div class="space-y-3">
         <Skeleton v-for="i in 5" :key="i" class="h-24 w-full" />
       </div>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="flex-1 p-6">
+    <div v-else-if="error">
       <div class="text-center py-12">
         <p class="text-destructive">{{ error }}</p>
         <Button variant="outline" class="mt-4" @click="fetchSchedules()">
@@ -201,22 +198,21 @@ onMounted(() => {
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="schedules.length === 0" class="flex-1 flex items-center justify-center">
-      <div class="text-center">
+    <div v-else-if="schedules.length === 0">
+      <div class="text-center py-12">
         <Inbox class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <p class="text-muted-foreground mb-4">No schedules yet</p>
         <p class="text-sm text-muted-foreground mb-4">
           Create a schedule from the Test Catalog by selecting tests and clicking "Schedule"
         </p>
-        <Button @click="router.push('/')">
+        <Button @click="router.push('/catalog')">
           Go to Test Catalog
         </Button>
       </div>
     </div>
 
     <!-- Schedules List -->
-    <ScrollArea v-else class="flex-1">
-      <div class="p-4 space-y-3">
+    <div v-else class="space-y-3">
         <div
           v-for="schedule in schedules"
           :key="schedule.id"
@@ -274,8 +270,7 @@ onMounted(() => {
             </div>
           </div>
         </div>
-      </div>
-    </ScrollArea>
+    </div>
 
     <!-- Delete Confirmation Dialog -->
     <AlertDialog :open="deleteDialogOpen" @update:open="deleteDialogOpen = $event">

@@ -144,38 +144,37 @@ function handleScheduleClick() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <div class="flex flex-col h-[calc(100vh-8rem)]">
     <!-- Page Header -->
-    <div class="border-b border-border bg-card px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-xl font-semibold text-foreground">Test Catalog</h1>
-          <p class="text-sm text-muted-foreground mt-0.5">
-            {{ testsStore.tests.length }} tests available
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <Button
-            variant="outline"
-            :disabled="!testsStore.hasSelection"
-            @click="handleScheduleClick"
-          >
-            <Calendar class="w-4 h-4 mr-2" />
-            Schedule
-          </Button>
-          <Button
-            :disabled="!testsStore.hasSelection"
-            @click="showRunDialog = true"
-          >
-            <Play class="w-4 h-4 mr-2" />
-            Run Selected ({{ testsStore.selectedCount }})
-          </Button>
-        </div>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">Test Catalog</h1>
+        <p class="text-muted-foreground mt-1">
+          {{ testsStore.tests.length }} tests available
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <Button
+          variant="outline"
+          :disabled="!testsStore.hasSelection"
+          @click="handleScheduleClick"
+        >
+          <Calendar class="w-4 h-4 mr-2" />
+          Schedule
+        </Button>
+        <Button
+          :disabled="!testsStore.hasSelection"
+          @click="showRunDialog = true"
+        >
+          <Play class="w-4 h-4 mr-2" />
+          Run Selected ({{ testsStore.selectedCount }})
+        </Button>
       </div>
     </div>
 
     <!-- Main Content -->
-    <ResizablePanelGroup direction="horizontal" class="flex-1">
+    <div class="flex-1 rounded-lg border bg-card overflow-hidden">
+      <ResizablePanelGroup direction="horizontal" class="h-full">
       <!-- Sidebar -->
       <ResizablePanel :defaultSize="25" :minSize="15" :maxSize="40">
         <div class="h-full flex flex-col border-r border-border bg-card">
@@ -362,7 +361,8 @@ function handleScheduleClick() {
           </ScrollArea>
         </div>
       </ResizablePanel>
-    </ResizablePanelGroup>
+      </ResizablePanelGroup>
+    </div>
 
     <!-- Run Dialog -->
     <RunDialog

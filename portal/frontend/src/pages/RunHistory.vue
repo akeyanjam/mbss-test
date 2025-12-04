@@ -7,7 +7,6 @@ import type { Run, RunStatus } from '@/types'
 // Components
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Select,
   SelectContent,
@@ -95,53 +94,51 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <div class="flex flex-col max-w-[1400px]">
     <!-- Header -->
-    <div class="border-b border-border bg-card px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-xl font-semibold text-foreground">Run History</h1>
-          <p class="text-sm text-muted-foreground mt-0.5">
-            {{ runs.length }} runs
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
-          <!-- Status Filter -->
-          <Select v-model="statusFilter">
-            <SelectTrigger class="w-[140px]">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="queued">Queued</SelectItem>
-              <SelectItem value="running">Running</SelectItem>
-              <SelectItem value="passed">Passed</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-bold tracking-tight">Run History</h1>
+        <p class="text-muted-foreground mt-1">
+          {{ runs.length }} runs
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Status Filter -->
+        <Select v-model="statusFilter">
+          <SelectTrigger class="w-[140px]">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="queued">Queued</SelectItem>
+            <SelectItem value="running">Running</SelectItem>
+            <SelectItem value="passed">Passed</SelectItem>
+            <SelectItem value="failed">Failed</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
 
-          <Button
-            variant="outline"
-            size="icon"
-            @click="fetchRuns(true)"
-            :disabled="isRefreshing"
-          >
-            <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isRefreshing }" />
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          @click="fetchRuns(true)"
+          :disabled="isRefreshing"
+        >
+          <RefreshCw class="w-4 h-4" :class="{ 'animate-spin': isRefreshing }" />
+        </Button>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="flex-1 p-6">
+    <div v-if="isLoading" class="space-y-3">
       <div class="space-y-3">
         <Skeleton v-for="i in 8" :key="i" class="h-20 w-full" />
       </div>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="flex-1 p-6">
+    <div v-else-if="error">
       <div class="text-center py-12">
         <p class="text-destructive">{{ error }}</p>
         <Button variant="outline" class="mt-4" @click="fetchRuns()">
@@ -151,8 +148,8 @@ onMounted(() => {
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="filteredRuns.length === 0" class="flex-1 flex items-center justify-center">
-      <div class="text-center">
+    <div v-else-if="filteredRuns.length === 0">
+      <div class="text-center py-12">
         <Inbox class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
         <p class="text-muted-foreground">
           {{ statusFilter === 'all' ? 'No runs yet' : `No ${statusFilter} runs` }}
@@ -168,8 +165,7 @@ onMounted(() => {
     </div>
 
     <!-- Runs List -->
-    <ScrollArea v-else class="flex-1">
-      <div class="p-4 space-y-2">
+    <div v-else class="space-y-2">
         <button
           v-for="run in filteredRuns"
           :key="run.id"
@@ -225,7 +221,6 @@ onMounted(() => {
             <ChevronRight class="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
           </div>
         </button>
-      </div>
-    </ScrollArea>
+    </div>
   </div>
 </template>

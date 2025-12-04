@@ -5,6 +5,12 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      name: 'dashboard',
+      component: () => import('@/pages/Dashboard.vue'),
+      meta: { title: 'Dashboard' }
+    },
+    {
+      path: '/catalog',
       name: 'catalog',
       component: () => import('@/pages/TestCatalog.vue'),
       meta: { title: 'Test Catalog' }

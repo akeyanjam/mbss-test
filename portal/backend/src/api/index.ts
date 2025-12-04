@@ -2,6 +2,7 @@ import { Router } from 'express';
 import testsRouter from './tests.js';
 import runsRouter from './runs.js';
 import schedulesRouter from './schedules.js';
+import dashboardRouter from './dashboard.js';
 import artifactsRouter from './artifacts.js';
 import { environments, getAllowedEnvironments } from '../config/index.js';
 
@@ -11,6 +12,7 @@ const router = Router();
 router.use('/tests', testsRouter);
 router.use('/runs', runsRouter);
 router.use('/schedules', schedulesRouter);
+router.use('/dashboard', dashboardRouter);
 
 // Environments endpoint
 router.get('/environments', (_req, res) => {
