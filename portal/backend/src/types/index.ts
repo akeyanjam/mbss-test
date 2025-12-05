@@ -41,10 +41,18 @@ export interface Run {
   scheduleId?: string | undefined;
   triggeredByEmail?: string | undefined;
   runOverrides?: Record<string, any> | undefined;
+  metadata?: RunMetadata | undefined;
   startedAt?: Date | undefined;
   finishedAt?: Date | undefined;
   summary?: RunSummary | undefined;
   createdAt: Date;
+}
+
+export interface RunMetadata {
+  selectionType: 'manual' | 'tags' | 'folder' | 'schedule';
+  tags?: string[];
+  folder?: string;
+  testNames?: string[];
 }
 
 export type RunStatus = 'queued' | 'running' | 'passed' | 'failed' | 'skipped' | 'cancelled';
@@ -112,6 +120,7 @@ export interface CreateRunRequest {
   environment: string;
   userEmail: string;
   overrides?: Record<string, any> | undefined;
+  metadata?: RunMetadata | undefined;
 }
 
 export interface CreateScheduleRequest {

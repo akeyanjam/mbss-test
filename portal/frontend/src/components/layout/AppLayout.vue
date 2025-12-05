@@ -47,11 +47,11 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-background flex">
-    <!-- Sidebar Navigation -->
-    <aside class="w-16 border-r border-border bg-card shrink-0 flex flex-col">
+  <div class="h-screen bg-background flex overflow-hidden">
+    <!-- Sidebar Navigation - Fixed/Sticky -->
+    <aside class="w-20 border-r border-border bg-card shrink-0 flex flex-col">
       <!-- Logo -->
-      <div class="h-16 flex items-center justify-center border-b border-border">
+      <div class="h-16 flex items-center justify-center border-b border-border shrink-0">
         <RouterLink to="/" class="flex items-center justify-center">
           <div class="w-10 h-10 rounded bg-primary flex items-center justify-center">
             <FlaskConical class="w-6 h-6 text-primary-foreground" />
@@ -60,37 +60,36 @@ function handleLogout() {
       </div>
 
       <!-- Navigation Items -->
-      <nav class="flex-1 flex flex-col gap-1 p-2">
+      <nav class="flex-1 flex flex-col gap-2 p-2 py-4">
         <RouterLink
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
-          class="flex items-center justify-center w-12 h-12 rounded-md transition-colors group relative"
+          class="flex flex-col items-center justify-center py-3 px-2 rounded-md transition-colors"
           :class="[
             route.path === item.to || (item.to !== '/' && route.path.startsWith(item.to))
               ? 'bg-primary text-primary-foreground'
               : 'text-muted-foreground hover:text-foreground hover:bg-accent'
           ]"
-          :title="item.label"
         >
-          <component :is="item.icon" class="w-5 h-5" />
-          <!-- Tooltip -->
-          <span class="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+          <component :is="item.icon" class="w-5 h-5 mb-1" />
+          <span class="text-[10px] font-medium text-center leading-tight">
             {{ item.label }}
           </span>
         </RouterLink>
       </nav>
 
       <!-- User Menu at Bottom -->
-      <div class="p-2 border-t border-border">
+      <div class="p-2 border-t border-border shrink-0">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" class="w-12 h-12 p-0 rounded-md">
-              <Avatar class="w-8 h-8">
+            <Button variant="ghost" class="w-full h-auto py-3 px-2 rounded-md flex flex-col items-center">
+              <Avatar class="w-8 h-8 mb-1">
                 <AvatarFallback class="bg-secondary text-secondary-foreground text-xs">
                   {{ getInitials(userStore.email || '') }}
                 </AvatarFallback>
               </Avatar>
+              <span class="text-[10px] font-medium text-muted-foreground">Account</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="end" class="w-56">
@@ -115,15 +114,15 @@ function handleLogout() {
       </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col min-w-0">
-      <!-- Top Bar (Optional - for breadcrumbs or page title) -->
+    <!-- Main Content Area - Scrollable -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <!-- Top Bar -->
       <header class="h-16 border-b border-border bg-card shrink-0 px-6 flex items-center">
         <h1 class="text-xl font-semibold text-foreground">MBSS Test Portal</h1>
       </header>
 
-      <!-- Main Content -->
-      <main class="flex-1 overflow-auto p-6">
+      <!-- Main Content - Scrollable -->
+      <main class="flex-1 overflow-y-auto p-6">
         <slot />
       </main>
     </div>

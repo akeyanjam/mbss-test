@@ -1,8 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process';
-import { existsSync, mkdirSync, writeFileSync, appendFileSync, unlinkSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, appendFileSync, readdirSync, renameSync } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { chromium, type Browser, type BrowserContext } from 'playwright';
 import { config } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 
@@ -36,9 +35,6 @@ import type { Run, RunTest, TestDefinition, RunSummary, TestArtifacts } from '..
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Screenshot interval in milliseconds
-const SCREENSHOT_INTERVAL = 5000;
-
 /**
  * Execute a run (all tests in the run)
  */
@@ -57,7 +53,6 @@ export async function executeRun(run: Run): Promise<void> {
     mkdirSync(runArtifactDir, { recursive: true });
   }
 
-  let browser: Browser | null = null;
   const summary: RunSummary = {
     totalTests: 0,
     passed: 0,
@@ -69,12 +64,6 @@ export async function executeRun(run: Run): Promise<void> {
   const startTime = Date.now();
 
   try {
-    // Launch browser
-    logger.info(`Launching browser for run ${run.id}`);
-    browser = await chromium.launch({
-      headless: true,
-    });
-
     // Get all tests for this run
     const runTests = getRunTests(run.id);
     summary.totalTests = runTests.length;
@@ -89,7 +78,7 @@ export async function executeRun(run: Run): Promise<void> {
         break;
       }
 
-      await executeTest(browser, run, runTest, testRoot, runArtifactDir, summary);
+      await executeTest(run, runTest, testRoot, runArtifactDir, summary);
     }
 
     // Calculate final status
@@ -104,16 +93,9 @@ export async function executeRun(run: Run): Promise<void> {
     updateRunStatus(run.id, finalStatus);
 
     logger.info(`Run ${run.id} completed: ${finalStatus} (${summary.passed}/${summary.totalTests} passed)`);
-
   } catch (error) {
-    logger.error(`Run ${run.id} failed with error:`, error);
-    summary.durationMs = Date.now() - startTime;
-    updateRunSummary(run.id, summary);
+    logger.error(`Run ${run.id} failed:`, error);
     updateRunStatus(run.id, 'failed');
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
 }
 
@@ -121,7 +103,6 @@ export async function executeRun(run: Run): Promise<void> {
  * Execute a single test
  */
 async function executeTest(
-  browser: Browser,
   run: Run,
   runTest: RunTest,
   testRoot: string,
@@ -152,70 +133,27 @@ async function executeTest(
   updateRunTestStatus(run.id, testKey, 'running');
 
   const testStartTime = Date.now();
-  let context: BrowserContext | null = null;
-  let screenshotInterval: NodeJS.Timeout | null = null;
 
   try {
     // Build effective config for this test
     const effectiveConfig = buildEffectiveConfig(testDef, run);
-
-    // Create browser context with video recording
-    context = await browser.newContext({
-      recordVideo: {
-        dir: testArtifactDir,
-        size: { width: 1280, height: 720 },
-      },
-    });
-
-    // Create page
-    const page = await context.newPage();
 
     // Set up log file
     const logPath = join(testArtifactDir, 'console.log');
     writeFileSync(logPath, `[${new Date().toISOString()}] Starting test: ${testKey}\n`);
     writeFileSync(logPath, `[${new Date().toISOString()}] Environment: ${run.environment}\n`, { flag: 'a' });
 
-    // Set up console log capture
-    page.on('console', msg => {
-      const logLine = `[${new Date().toISOString()}] [CONSOLE] ${msg.type()}: ${msg.text()}\n`;
-      appendFileSync(logPath, logLine);
-    });
-
-    // Set up periodic screenshots
-    const liveScreenshotPath = join(testArtifactDir, 'live.jpg');
-    screenshotInterval = setInterval(async () => {
-      try {
-        await page.screenshot({ path: liveScreenshotPath, type: 'jpeg', quality: 80 });
-      } catch {
-        // Page might be navigating, ignore errors
-      }
-    }, SCREENSHOT_INTERVAL);
-
-    // Run the test using Playwright CLI
-    const specPath = join(testRoot, testDef.specPath);
+    // Run the test using Playwright CLI with grep to filter by test name
+    const specPath = join(config.testRoot, testDef.specPath).replace(/\\/g, '/');
     
     appendFileSync(logPath, `[${new Date().toISOString()}] Running spec: ${specPath}\n`);
 
-    // Execute test via child process
-    const result = await runPlaywrightTest(specPath, effectiveConfig, logPath, testArtifactDir);
+    // Use --grep to run only the specific test by its key
+    // Playwright will handle browser launch, video recording, and screenshots
+    const result = await runPlaywrightTest(testKey, effectiveConfig, logPath, testArtifactDir);
 
-    // Stop screenshot interval
-    if (screenshotInterval) {
-      clearInterval(screenshotInterval);
-      screenshotInterval = null;
-    }
-
-    // Clean up live screenshot
-    if (existsSync(liveScreenshotPath)) {
-      unlinkSync(liveScreenshotPath);
-    }
-
-    // Close context to finalize video
-    await context.close();
-    context = null;
-
-    // Find video file
-    const videoFile = findVideoFile(testArtifactDir);
+    // Find and move video file from Playwright's nested directory structure
+    const videoFile = findAndMoveVideo(testArtifactDir);
 
     const durationMs = Date.now() - testStartTime;
     const artifacts: TestArtifacts = {
@@ -247,14 +185,6 @@ async function executeTest(
       errorMessage,
     });
     summary.failed++;
-
-  } finally {
-    if (screenshotInterval) {
-      clearInterval(screenshotInterval);
-    }
-    if (context) {
-      await context.close();
-    }
   }
 }
 
@@ -298,7 +228,7 @@ function buildEffectiveConfig(testDef: TestDefinition, run: Run): Record<string,
  * Run a Playwright test via CLI
  */
 async function runPlaywrightTest(
-  specPath: string,
+  testKey: string,
   config: Record<string, any>,
   logPath: string,
   outputDir: string
@@ -323,8 +253,10 @@ async function runPlaywrightTest(
       MBSS_TEST_CONFIG: JSON.stringify(config),
     };
 
-    // Use npx playwright test
-    const args = ['playwright', 'test', specPath, '--reporter=line', `--output=${outputDir}`];
+    // Use npx playwright test with --grep to filter by test name
+    // Use --config to specify our config explicitly
+    const configPath = resolve(__dirname, '../../..', 'playwright.config.ts');
+    const args = ['playwright', 'test', `--config=${configPath}`, `--grep=${testKey}`, '--reporter=line', `--output=${outputDir}`];
 
     safeAppendFileSync(logPath, `[${new Date().toISOString()}] Executing: npx ${args.join(' ')}\n`);
 
@@ -370,15 +302,45 @@ async function runPlaywrightTest(
 }
 
 /**
- * Find video file in artifact directory
+ * Find video file in Playwright's nested directory structure and move it to the test artifact directory
+ * Playwright creates subdirectories like "auth-basic-login-basic-login-basic-login-chromium/video.webm"
+ * We need to find this video and move it to the root of the test artifact directory
  */
-function findVideoFile(dir: string): string | undefined {
-  const { readdirSync } = require('fs');
+function findAndMoveVideo(testArtifactDir: string): string | undefined {
   try {
-    const files = readdirSync(dir) as string[];
-    const videoFile = files.find((f: string) => f.endsWith('.webm') || f.endsWith('.mp4'));
-    return videoFile;
-  } catch {
+    // Recursively search for video files in subdirectories
+    function findVideoRecursive(dir: string): string | undefined {
+      const items = readdirSync(dir, { withFileTypes: true });
+      
+      for (const item of items) {
+        const fullPath = join(dir, item.name);
+        
+        if (item.isFile() && (item.name.endsWith('.webm') || item.name.endsWith('.mp4'))) {
+          return fullPath;
+        }
+        
+        if (item.isDirectory()) {
+          const found = findVideoRecursive(fullPath);
+          if (found) return found;
+        }
+      }
+      
+      return undefined;
+    }
+    
+    const videoPath = findVideoRecursive(testArtifactDir);
+    
+    if (videoPath && videoPath !== join(testArtifactDir, 'video.webm')) {
+      // Move video to root of test artifact directory
+      const destPath = join(testArtifactDir, 'video.webm');
+      renameSync(videoPath, destPath);
+      logger.info(`Moved video from ${videoPath} to ${destPath}`);
+      return 'video.webm';
+    }
+    
+    return videoPath ? 'video.webm' : undefined;
+  } catch (error) {
+    logger.error('Failed to find/move video:', error);
     return undefined;
   }
 }

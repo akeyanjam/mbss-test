@@ -5,7 +5,6 @@ import { toast } from 'vue-sonner'
 import {
   getRunById,
   getTestLogs,
-  getTestScreenshot,
   cancelRun,
   getArtifactUrl,
 } from '@/api/client'
@@ -33,7 +32,6 @@ import {
   Video,
   FileText,
   Download,
-  Image,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -49,13 +47,11 @@ const isCancelling = ref(false)
 // Live updates state
 const logs = ref('')
 const logOffset = ref(0)
-const screenshotUrl = ref<string | null>(null)
 const isLogFinished = ref(false)
 
 // Polling intervals
 let runPollInterval: ReturnType<typeof setInterval> | null = null
 let logPollInterval: ReturnType<typeof setInterval> | null = null
-let screenshotPollInterval: ReturnType<typeof setInterval> | null = null
 
 // Computed
 const runId = computed(() => route.params.runId as string)
@@ -129,26 +125,6 @@ async function fetchLogs() {
   }
 }
 
-// Fetch screenshot for selected test
-async function fetchScreenshot() {
-  if (!selectedTestKey.value || !isTestRunning.value) {
-    screenshotUrl.value = null
-    return
-  }
-
-  try {
-    const blob = await getTestScreenshot(runId.value, selectedTestKey.value)
-    if (blob) {
-      // Revoke old URL to prevent memory leaks
-      if (screenshotUrl.value) {
-        URL.revokeObjectURL(screenshotUrl.value)
-      }
-      screenshotUrl.value = URL.createObjectURL(blob)
-    }
-  } catch {
-    screenshotUrl.value = null
-  }
-}
 
 // Cancel run
 async function handleCancel() {
@@ -175,10 +151,8 @@ function selectTest(testKey: string) {
   logs.value = ''
   logOffset.value = 0
   isLogFinished.value = false
-  screenshotUrl.value = null
   // Fetch immediately
   fetchLogs()
-  fetchScreenshot()
 }
 
 // Start polling
@@ -186,11 +160,10 @@ function startPolling() {
   // Poll run status every 3 seconds
   runPollInterval = setInterval(fetchRun, 3000)
 
-  // Poll logs every 2 seconds
-  logPollInterval = setInterval(fetchLogs, 2000)
-
-  // Poll screenshot every 5 seconds
-  screenshotPollInterval = setInterval(fetchScreenshot, 5000)
+  // Start polling for logs
+  if (isTestRunning.value) {
+    logPollInterval = setInterval(fetchLogs, 2000)
+  }
 }
 
 // Stop polling
@@ -203,14 +176,6 @@ function stopPolling() {
     clearInterval(logPollInterval)
     logPollInterval = null
   }
-  if (screenshotPollInterval) {
-    clearInterval(screenshotPollInterval)
-    screenshotPollInterval = null
-  }
-  if (screenshotUrl.value) {
-    URL.revokeObjectURL(screenshotUrl.value)
-    screenshotUrl.value = null
-  }
 }
 
 // Watch for test selection changes
@@ -219,18 +184,15 @@ watch(selectedTestKey, () => {
   logOffset.value = 0
   isLogFinished.value = false
   fetchLogs()
-  fetchScreenshot()
 })
 
 // Watch for run completion to stop log polling
 watch(isTestRunning, (running) => {
-  if (!running && screenshotPollInterval) {
-    clearInterval(screenshotPollInterval)
-    screenshotPollInterval = null
-    if (screenshotUrl.value) {
-      URL.revokeObjectURL(screenshotUrl.value)
-      screenshotUrl.value = null
-    }
+  if (!running && logPollInterval) {
+    clearInterval(logPollInterval)
+    logPollInterval = null
+  } else if (running && !logPollInterval) {
+    logPollInterval = setInterval(fetchLogs, 2000)
   }
 })
 
@@ -239,7 +201,6 @@ onMounted(async () => {
   if (run.value) {
     startPolling()
     fetchLogs()
-    fetchScreenshot()
   }
 })
 
@@ -260,67 +221,65 @@ function getLogsUrl(test: RunTest): string | null {
 </script>
 
 <template>
-  <div class="h-full flex flex-col">
+  <div class="space-y-6 max-w-[1600px]">
     <!-- Header -->
-    <div class="border-b border-border bg-card px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <Button variant="ghost" size="icon" @click="router.push('/runs')">
-            <ArrowLeft class="w-4 h-4" />
-          </Button>
-          <div>
-            <div class="flex items-center gap-3">
-              <h1 class="text-xl font-semibold text-foreground">Run Details</h1>
-              <RunStatusBadge v-if="run" :status="run.status" />
-              <EnvironmentBadge v-if="run" :code="run.environment" />
-            </div>
-            <div v-if="run" class="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-              <span class="flex items-center gap-1">
-                <Clock class="w-3.5 h-3.5" />
-                {{ formattedDate }}
-              </span>
-              <span v-if="run.triggeredByEmail" class="flex items-center gap-1">
-                <User class="w-3.5 h-3.5" />
-                {{ run.triggeredByEmail }}
-              </span>
-              <span v-if="formattedDuration">
-                Duration: {{ formattedDuration }}
-              </span>
-            </div>
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <Button variant="ghost" size="icon" @click="router.push('/runs')">
+          <ArrowLeft class="w-4 h-4" />
+        </Button>
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="text-3xl font-bold tracking-tight">Run Details</h1>
+            <RunStatusBadge v-if="run" :status="run.status" />
+            <EnvironmentBadge v-if="run" :code="run.environment" />
+          </div>
+          <div v-if="run" class="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+            <span class="flex items-center gap-1">
+              <Clock class="w-3.5 h-3.5" />
+              {{ formattedDate }}
+            </span>
+            <span v-if="run.triggeredByEmail" class="flex items-center gap-1">
+              <User class="w-3.5 h-3.5" />
+              {{ run.triggeredByEmail }}
+            </span>
+            <span v-if="formattedDuration">
+              Duration: {{ formattedDuration }}
+            </span>
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <Button
-            v-if="isRunActive"
-            variant="destructive"
-            :disabled="isCancelling"
-            @click="handleCancel"
-          >
-            <Ban class="w-4 h-4 mr-2" />
-            {{ isCancelling ? 'Cancelling...' : 'Cancel Run' }}
-          </Button>
-        </div>
       </div>
+      <div class="flex items-center gap-2">
+        <Button
+          v-if="isRunActive"
+          variant="destructive"
+          :disabled="isCancelling"
+          @click="handleCancel"
+        >
+          <Ban class="w-4 h-4 mr-2" />
+          {{ isCancelling ? 'Cancelling...' : 'Cancel Run' }}
+        </Button>
+      </div>
+    </div>
 
-      <!-- Summary Bar -->
-      <div v-if="run?.summary" class="flex items-center gap-6 mt-4 pt-4 border-t border-border">
-        <div class="text-center">
-          <p class="text-2xl font-semibold text-foreground">{{ run.summary.totalTests }}</p>
-          <p class="text-xs text-muted-foreground">Total</p>
-        </div>
-        <Separator orientation="vertical" class="h-10" />
-        <div class="text-center">
-          <p class="text-2xl font-semibold text-green-600">{{ run.summary.passed }}</p>
-          <p class="text-xs text-muted-foreground">Passed</p>
-        </div>
-        <div class="text-center">
-          <p class="text-2xl font-semibold text-red-600">{{ run.summary.failed }}</p>
-          <p class="text-xs text-muted-foreground">Failed</p>
-        </div>
-        <div class="text-center">
-          <p class="text-2xl font-semibold text-gray-500">{{ run.summary.skipped }}</p>
-          <p class="text-xs text-muted-foreground">Skipped</p>
-        </div>
+    <!-- Summary Bar -->
+    <div v-if="run?.summary" class="flex items-center gap-6 p-6 rounded-lg border bg-card">
+      <div class="text-center">
+        <p class="text-2xl font-semibold text-foreground">{{ run.summary.totalTests }}</p>
+        <p class="text-xs text-muted-foreground">Total</p>
+      </div>
+      <Separator orientation="vertical" class="h-10" />
+      <div class="text-center">
+        <p class="text-2xl font-semibold text-green-600">{{ run.summary.passed }}</p>
+        <p class="text-xs text-muted-foreground">Passed</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-semibold text-red-600">{{ run.summary.failed }}</p>
+        <p class="text-xs text-muted-foreground">Failed</p>
+      </div>
+      <div class="text-center">
+        <p class="text-2xl font-semibold text-gray-500">{{ run.summary.skipped }}</p>
+        <p class="text-xs text-muted-foreground">Skipped</p>
       </div>
     </div>
 
@@ -343,10 +302,11 @@ function getLogsUrl(test: RunTest): string | null {
     </div>
 
     <!-- Main Content -->
-    <ResizablePanelGroup v-else-if="run" direction="horizontal" class="flex-1">
-      <!-- Test List Panel -->
-      <ResizablePanel :defaultSize="30" :minSize="20" :maxSize="50">
-        <div class="h-full border-r border-border bg-card">
+    <div v-else-if="run" class="rounded-lg border bg-card overflow-hidden">
+      <ResizablePanelGroup direction="horizontal" class="min-h-[600px]">
+        <!-- Test List Panel -->
+        <ResizablePanel :defaultSize="30" :minSize="20" :maxSize="50">
+          <div class="h-full border-r border-border">
           <div class="px-4 py-3 border-b border-border">
             <h2 class="text-sm font-medium text-foreground">
               Tests ({{ run.tests.length }})
@@ -436,53 +396,54 @@ function getLogsUrl(test: RunTest): string | null {
                   </Button>
                 </div>
               </div>
-              <!-- Error Message -->
-              <div
-                v-if="selectedTest.errorMessage"
-                class="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md"
-              >
-                <p class="text-sm text-destructive font-mono">{{ selectedTest.errorMessage }}</p>
-              </div>
             </div>
 
             <!-- Content Area -->
             <div class="flex-1 flex flex-col overflow-hidden">
-              <!-- Live Screenshot (only when running) -->
+              <!-- Video Placeholder (when running) or Video Player (when finished) -->
               <div
-                v-if="isTestRunning && screenshotUrl"
-                class="p-4 border-b border-border bg-muted/20"
-              >
-                <div class="flex items-center gap-2 mb-2">
-                  <Image class="w-4 h-4 text-muted-foreground" />
-                  <span class="text-sm font-medium text-muted-foreground">Live Screenshot</span>
-                  <Badge variant="outline" class="text-xs bg-blue-100 text-blue-700 border-blue-200">
-                    Updating every 5s
-                  </Badge>
-                </div>
-                <div class="rounded-lg overflow-hidden border border-border bg-black">
-                  <img
-                    :src="screenshotUrl"
-                    alt="Live screenshot"
-                    class="w-full h-auto max-h-[300px] object-contain"
-                  />
-                </div>
-              </div>
-
-              <!-- Video Player (when completed) -->
-              <div
-                v-else-if="selectedTest.artifacts?.video && !isTestRunning"
+                v-if="selectedTest"
                 class="p-4 border-b border-border bg-muted/20"
               >
                 <div class="flex items-center gap-2 mb-2">
                   <Video class="w-4 h-4 text-muted-foreground" />
                   <span class="text-sm font-medium text-muted-foreground">Recording</span>
+                  <Badge
+                    v-if="isTestRunning"
+                    variant="outline"
+                    class="text-xs bg-blue-100 text-blue-700 border-blue-200"
+                  >
+                    In Progress
+                  </Badge>
+                  <Badge
+                    v-else-if="getVideoUrl(selectedTest)"
+                    variant="outline"
+                    class="text-xs bg-green-100 text-green-700 border-green-200"
+                  >
+                    Available
+                  </Badge>
                 </div>
                 <div class="rounded-lg overflow-hidden border border-border bg-black">
+                  <!-- Video player when test is finished and video exists -->
                   <video
+                    v-if="!isTestRunning && getVideoUrl(selectedTest)"
                     :src="getVideoUrl(selectedTest)!"
                     controls
-                    class="w-full max-h-[300px]"
-                  />
+                    class="w-full h-auto max-h-[400px]"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                  <!-- Placeholder when test is running or no video -->
+                  <div
+                    v-else
+                    class="flex items-center justify-center h-[300px] text-muted-foreground"
+                  >
+                    <div class="text-center">
+                      <Video class="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p class="text-sm">{{ isTestRunning ? 'Recording in progress...' : 'No video available' }}</p>
+                      <p v-if="isTestRunning" class="text-xs mt-1">Video will be available when test completes</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -507,6 +468,7 @@ function getLogsUrl(test: RunTest): string | null {
           </template>
         </div>
       </ResizablePanel>
-    </ResizablePanelGroup>
+      </ResizablePanelGroup>
+    </div>
   </div>
 </template>

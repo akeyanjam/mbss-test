@@ -94,11 +94,12 @@ export function createSchedule(data: {
 
   db.prepare(`
     INSERT INTO schedules (id, name, cron, enabled, environment, selector, default_run_overrides, created_by_email, created_at, updated_at)
-    VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     data.name,
     data.cron,
+    1, // Default to enabled
     data.environment,
     JSON.stringify(data.selector),
     data.defaultRunOverrides ? JSON.stringify(data.defaultRunOverrides) : null,
@@ -194,6 +195,11 @@ export function updateScheduleLastTriggered(id: string): void {
 export function toggleScheduleEnabled(id: string, enabled: boolean): Schedule | null {
   const db = getDb();
   const now = new Date().toISOString();
-  db.prepare('UPDATE schedules SET enabled = ?, updated_at = ? WHERE id = ?').run(enabled ? 1 : 0, now, id);
-  return getScheduleById(id);
+  const enabledValue = enabled ? 1 : 0;
+  console.log(`Updating schedule ${id} enabled to ${enabledValue} (${enabled})`);
+  const result = db.prepare('UPDATE schedules SET enabled = ?, updated_at = ? WHERE id = ?').run(enabledValue, now, id);
+  console.log(`Update result:`, result);
+  const updated = getScheduleById(id);
+  console.log(`Retrieved schedule:`, updated);
+  return updated;
 }

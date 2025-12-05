@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { CheckCircle2, XCircle, Clock, Ban } from 'lucide-vue-next'
+import RunMetadataDisplay from '@/components/shared/RunMetadataDisplay.vue'
+import type { RunMetadata } from '@/types'
 
 const props = defineProps<{
   executions: Array<{
@@ -9,6 +11,7 @@ const props = defineProps<{
     status: string
     triggerType: string
     triggeredBy: string | null
+    metadata?: RunMetadata
     startedAt: string | null
     finishedAt: string | null
     duration: number | null
@@ -133,11 +136,14 @@ function viewRun(id: string) {
           <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
             {{ formatDuration(execution.duration) }}
           </td>
-          <td class="px-6 py-4 whitespace-nowrap">
+          <td class="px-6 py-4">
             <div class="text-sm">
               <div class="font-medium capitalize">{{ execution.triggerType }}</div>
               <div v-if="execution.triggeredBy" class="text-xs text-muted-foreground">
                 {{ execution.triggeredBy }}
+              </div>
+              <div class="mt-1">
+                <RunMetadataDisplay :metadata="execution.metadata" />
               </div>
             </div>
           </td>

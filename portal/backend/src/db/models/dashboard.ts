@@ -38,6 +38,7 @@ export interface ExecutionHistoryItem {
   status: string;
   triggerType: string;
   triggeredBy: string | null;
+  metadata?: import('../../types/index.js').RunMetadata;
   startedAt: Date | null;
   finishedAt: Date | null;
   duration: number | null;
@@ -347,6 +348,7 @@ export function getExecutionHistory(options: {
       r.status,
       r.trigger_type,
       r.triggered_by_email,
+      r.metadata,
       r.started_at,
       r.finished_at,
       r.summary,
@@ -367,6 +369,7 @@ export function getExecutionHistory(options: {
     status: string;
     trigger_type: string;
     triggered_by_email: string | null;
+    metadata: string | null;
     started_at: string | null;
     finished_at: string | null;
     summary: string | null;
@@ -382,6 +385,7 @@ export function getExecutionHistory(options: {
       status: row.status,
       triggerType: row.trigger_type,
       triggeredBy: row.triggered_by_email,
+      metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
       startedAt: row.started_at ? new Date(row.started_at) : null,
       finishedAt: row.finished_at ? new Date(row.finished_at) : null,
       duration: row.duration_ms,

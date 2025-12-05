@@ -103,6 +103,14 @@ const migrations: Migration[] = [
       INSERT OR IGNORE INTO system_settings (key, value) VALUES ('retention_days', '30');
     `,
   },
+  {
+    version: 2,
+    name: 'add_run_metadata',
+    up: `
+      -- Add metadata column to runs table to store selection criteria
+      ALTER TABLE runs ADD COLUMN metadata TEXT;
+    `,
+  },
 ];
 
 /**

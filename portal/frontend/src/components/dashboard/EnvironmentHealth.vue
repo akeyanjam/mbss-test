@@ -34,19 +34,6 @@ function getHealthIcon(status: string) {
   }
 }
 
-function getHealthColor(status: string) {
-  switch (status) {
-    case 'healthy':
-      return 'text-green-600 bg-green-50 border-green-200'
-    case 'warning':
-      return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-    case 'critical':
-      return 'text-red-600 bg-red-50 border-red-200'
-    default:
-      return 'text-gray-600 bg-gray-50 border-gray-200'
-  }
-}
-
 function formatDuration(ms: number) {
   const seconds = Math.floor(ms / 1000)
   const minutes = Math.floor(seconds / 60)
@@ -72,47 +59,80 @@ function formatTimeAgo(date: string) {
 
 <template>
   <div class="p-6">
+    <!-- Environment Cards with Gauges -->
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="env in environments"
         :key="env.code"
-        class="rounded-lg border p-4"
-        :class="getHealthColor(env.healthStatus)"
+        class="rounded-lg border p-4 bg-card hover:shadow-md transition-shadow"
       >
-        <div class="flex items-center justify-between mb-3">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-4">
           <div>
             <h3 class="font-semibold text-lg">{{ env.code }}</h3>
             <p class="text-xs text-muted-foreground">{{ env.name }}</p>
           </div>
-          <component :is="getHealthIcon(env.healthStatus)" class="h-6 w-6" />
+          <component
+            :is="getHealthIcon(env.healthStatus)"
+            class="h-5 w-5"
+            :class="{
+              'text-green-600': env.healthStatus === 'healthy',
+              'text-yellow-600': env.healthStatus === 'warning',
+              'text-red-600': env.healthStatus === 'critical'
+            }"
+          />
         </div>
 
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Pass Rate:</span>
-            <span class="font-medium">{{ env.stats.passRate }}%</span>
+        <!-- Gauge Chart for Pass Rate -->
+        <div class="mb-4">
+          <div class="relative w-full h-24 flex items-end justify-center">
+            <svg viewBox="0 0 120 70" class="w-full h-full">
+              <!-- Background arc -->
+              <path
+                d="M 10 60 A 50 50 0 0 1 110 60"
+                fill="none"
+                stroke="#e5e7eb"
+                stroke-width="8"
+                stroke-linecap="round"
+              />
+              <!-- Colored arc based on pass rate -->
+              <path
+                d="M 10 60 A 50 50 0 0 1 110 60"
+                fill="none"
+                :stroke="env.stats.passRate >= 90 ? '#22c55e' : env.stats.passRate >= 70 ? '#eab308' : '#ef4444'"
+                stroke-width="8"
+                stroke-linecap="round"
+                :stroke-dasharray="`${(env.stats.passRate / 100) * 157} 157`"
+                class="transition-all duration-500"
+              />
+              <!-- Center text -->
+              <text x="60" y="50" text-anchor="middle" class="text-2xl font-bold" fill="currentColor">
+                {{ env.stats.passRate }}%
+              </text>
+              <text x="60" y="65" text-anchor="middle" class="text-xs" fill="currentColor" opacity="0.6">
+                Pass Rate
+              </text>
+            </svg>
           </div>
-          
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Avg Duration:</span>
-            <span class="font-medium">{{ formatDuration(env.stats.avgDuration) }}</span>
+        </div>
+
+        <!-- Compact Stats Grid -->
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div class="flex flex-col">
+            <span class="text-muted-foreground">Avg Duration</span>
+            <span class="font-semibold text-sm">{{ formatDuration(env.stats.avgDuration) }}</span>
           </div>
-          
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Total Runs:</span>
-            <span class="font-medium">{{ env.stats.totalRuns }}</span>
+          <div class="flex flex-col">
+            <span class="text-muted-foreground">Total Runs</span>
+            <span class="font-semibold text-sm">{{ env.stats.totalRuns }}</span>
           </div>
-          
-          <div class="flex justify-between">
-            <span class="text-muted-foreground">Last 24h:</span>
-            <span class="font-medium">{{ env.stats.last24Hours }}</span>
+          <div class="flex flex-col">
+            <span class="text-muted-foreground">Last 24h</span>
+            <span class="font-semibold text-sm">{{ env.stats.last24Hours }}</span>
           </div>
-          
-          <div v-if="env.lastRun" class="pt-2 border-t">
-            <div class="flex justify-between text-xs">
-              <span class="text-muted-foreground">Last Run:</span>
-              <span class="font-medium">{{ formatTimeAgo(env.lastRun.finishedAt) }}</span>
-            </div>
+          <div v-if="env.lastRun" class="flex flex-col">
+            <span class="text-muted-foreground">Last Run</span>
+            <span class="font-semibold text-sm">{{ formatTimeAgo(env.lastRun.finishedAt) }}</span>
           </div>
         </div>
       </div>

@@ -100,6 +100,14 @@ function triggerSchedule(schedule: Schedule): void {
   // Get tests based on selector
   const tests = getTestsForSelector(schedule.selector);
   
+  // Build metadata from selector
+  const metadata: import('../../types/index.js').RunMetadata = 
+    schedule.selector.type === 'folder'
+      ? { selectionType: 'folder', folder: schedule.selector.folderPrefix }
+      : schedule.selector.type === 'tags'
+      ? { selectionType: 'tags', tags: schedule.selector.tags }
+      : { selectionType: 'schedule', testNames: schedule.selector.testKeys };
+  
   if (tests.length === 0) {
     logger.warn(`Schedule ${schedule.id} matched no tests, creating skipped run`);
     // Create a skipped run for audit purposes
@@ -109,6 +117,7 @@ function triggerSchedule(schedule: Schedule): void {
       scheduleId: schedule.id,
       triggeredByEmail: schedule.createdByEmail,
       runOverrides: schedule.defaultRunOverrides,
+      metadata,
       testIds: [],
     });
     updateScheduleLastTriggered(schedule.id);
@@ -122,6 +131,7 @@ function triggerSchedule(schedule: Schedule): void {
     scheduleId: schedule.id,
     triggeredByEmail: schedule.createdByEmail,
     runOverrides: schedule.defaultRunOverrides,
+    metadata,
     testIds: tests.map(t => ({ testId: t.id, testKey: t.testKey })),
   });
 

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select'
 import RunStatusBadge from '@/components/shared/RunStatusBadge.vue'
 import EnvironmentBadge from '@/components/shared/EnvironmentBadge.vue'
+import RunMetadataDisplay from '@/components/shared/RunMetadataDisplay.vue'
 import {
   RefreshCw,
   Clock,
@@ -32,12 +33,28 @@ const runs = ref<Run[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const statusFilter = ref<RunStatus | 'all'>('all')
+const environmentFilter = ref<string>('all')
 const isRefreshing = ref(false)
+
+// Get unique environments from runs
+const environments = computed(() => {
+  const envs = new Set(runs.value.map(r => r.environment))
+  return Array.from(envs).sort()
+})
 
 // Computed
 const filteredRuns = computed(() => {
-  if (statusFilter.value === 'all') return runs.value
-  return runs.value.filter(r => r.status === statusFilter.value)
+  let filtered = runs.value
+  
+  if (statusFilter.value !== 'all') {
+    filtered = filtered.filter(r => r.status === statusFilter.value)
+  }
+  
+  if (environmentFilter.value !== 'all') {
+    filtered = filtered.filter(r => r.environment === environmentFilter.value)
+  }
+  
+  return filtered
 })
 
 // Fetch runs
@@ -104,6 +121,19 @@ onMounted(() => {
         </p>
       </div>
       <div class="flex items-center gap-3">
+        <!-- Environment Filter -->
+        <Select v-model="environmentFilter">
+          <SelectTrigger class="w-[140px]">
+            <SelectValue placeholder="All environments" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All environments</SelectItem>
+            <SelectItem v-for="env in environments" :key="env" :value="env">
+              {{ env }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
         <!-- Status Filter -->
         <Select v-model="statusFilter">
           <SelectTrigger class="w-[140px]">
@@ -169,26 +199,27 @@ onMounted(() => {
         <button
           v-for="run in filteredRuns"
           :key="run.id"
-          class="w-full text-left p-4 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
+          class="w-full text-left p-3 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
           @click="navigateToRun(run.id)"
         >
-          <div class="flex items-start justify-between gap-4">
-            <!-- Left: Status & Info -->
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <RunStatusBadge :status="run.status" />
-                <EnvironmentBadge :code="run.environment" />
-                <span
-                  v-if="run.triggerType === 'schedule'"
-                  class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded"
-                >
-                  <Calendar class="w-3 h-3 inline mr-1" />
-                  Scheduled
-                </span>
-              </div>
+          <div class="flex items-center justify-between gap-4">
+            <!-- Left: Status & Badges -->
+            <div class="flex items-center gap-2 shrink-0">
+              <RunStatusBadge :status="run.status" />
+              <EnvironmentBadge :code="run.environment" />
+              <span
+                v-if="run.triggerType === 'schedule'"
+                class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded flex items-center gap-1"
+              >
+                <Calendar class="w-3 h-3" />
+                Scheduled
+              </span>
+            </div>
 
+            <!-- Center: Summary & Metadata -->
+            <div class="flex-1 min-w-0 flex items-center gap-6">
               <!-- Summary -->
-              <div v-if="run.summary" class="mt-2 flex items-center gap-4 text-sm">
+              <div v-if="run.summary" class="flex items-center gap-3 text-sm">
                 <span class="text-foreground font-medium">
                   {{ run.summary.totalTests }} tests
                 </span>
@@ -201,24 +232,29 @@ onMounted(() => {
                 </span>
               </div>
 
-              <!-- Meta -->
-              <div class="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+              <!-- Metadata -->
+              <div v-if="run.metadata" class="shrink-0">
+                <RunMetadataDisplay :metadata="run.metadata" />
+              </div>
+            </div>
+
+            <!-- Right: Meta Info & Arrow -->
+            <div class="flex items-center gap-4 shrink-0">
+              <div class="flex items-center gap-3 text-xs text-muted-foreground">
                 <span class="flex items-center gap-1">
                   <Clock class="w-3 h-3" />
                   {{ formatDate(run.createdAt) }}
                 </span>
                 <span v-if="run.summary?.durationMs">
-                  Duration: {{ formatDuration(run.summary.durationMs) }}
+                  {{ formatDuration(run.summary.durationMs) }}
                 </span>
                 <span v-if="run.triggeredByEmail" class="flex items-center gap-1">
                   <User class="w-3 h-3" />
                   {{ run.triggeredByEmail }}
                 </span>
               </div>
+              <ChevronRight class="w-5 h-5 text-muted-foreground" />
             </div>
-
-            <!-- Right: Arrow -->
-            <ChevronRight class="w-5 h-5 text-muted-foreground shrink-0 mt-1" />
           </div>
         </button>
     </div>

@@ -12,7 +12,11 @@
     "copy-tests": "node scripts/copy-tests.js",
     "dev:full": "npm run copy-tests && npm run dev"
   },
-  "keywords": ["playwright", "test-runner", "dashboard"],
+  "keywords": [
+    "playwright",
+    "test-runner",
+    "dashboard"
+  ],
   "author": "alireza.keyanjam@bofa.com",
   "license": "UNLICENSED",
   "dependencies": {
@@ -25,6 +29,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/better-sqlite3": "^7.6.12",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

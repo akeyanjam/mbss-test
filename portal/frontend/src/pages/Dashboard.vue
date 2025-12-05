@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getDashboardOverview, getExecutionHistory, getEnvironmentHealth, getFlakyTests } from '@/api/client'
 import StatsCards from '@/components/dashboard/StatsCards.vue'
 import ExecutionTable from '@/components/dashboard/ExecutionTable.vue'
@@ -13,6 +13,8 @@ const executions = ref<any[]>([])
 const environmentHealth = ref<any[]>([])
 const flakyTests = ref<any[]>([])
 const selectedDays = ref(30)
+const executionsPage = ref(1)
+const executionsPerPage = 10
 let pollInterval: number | null = null
 
 async function loadDashboard() {
@@ -22,7 +24,7 @@ async function loadDashboard() {
     // Load all dashboard data in parallel
     const [overviewData, executionsData, healthData, flakyData] = await Promise.all([
       getDashboardOverview(selectedDays.value),
-      getExecutionHistory({ limit: 20 }),
+      getExecutionHistory({ limit: 50 }), // Load more for pagination
       getEnvironmentHealth(selectedDays.value),
       getFlakyTests({ days: selectedDays.value, minExecutions: 5 }),
     ])
@@ -38,6 +40,16 @@ async function loadDashboard() {
     loading.value = false
   }
 }
+
+const paginatedExecutions = computed(() => {
+  const start = (executionsPage.value - 1) * executionsPerPage
+  const end = start + executionsPerPage
+  return executions.value.slice(start, end)
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(executions.value.length / executionsPerPage)
+})
 
 function startPolling() {
   // Poll every 10 seconds for active runs
@@ -112,18 +124,7 @@ function handleDaysChange(days: number) {
       <!-- Stats Cards -->
       <StatsCards :overview="overview" />
 
-      <!-- Recent Executions -->
-      <div class="rounded-lg border bg-card">
-        <div class="p-6 border-b">
-          <h2 class="text-xl font-semibold">Recent Executions</h2>
-          <p class="text-sm text-muted-foreground mt-1">
-            Latest test runs across all environments
-          </p>
-        </div>
-        <ExecutionTable :executions="executions" />
-      </div>
-
-      <!-- Environment Health -->
+      <!-- Environment Health with Chart -->
       <div class="rounded-lg border bg-card">
         <div class="p-6 border-b">
           <h2 class="text-xl font-semibold">Environment Health</h2>
@@ -143,6 +144,43 @@ function handleDaysChange(days: number) {
           </p>
         </div>
         <FlakyTestsTable :tests="flakyTests" />
+      </div>
+
+      <!-- Recent Executions with Pagination -->
+      <div class="rounded-lg border bg-card">
+        <div class="p-6 border-b">
+          <h2 class="text-xl font-semibold">Recent Executions</h2>
+          <p class="text-sm text-muted-foreground mt-1">
+            Latest test runs across all environments
+          </p>
+        </div>
+        <ExecutionTable :executions="paginatedExecutions" />
+        
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="p-4 border-t flex items-center justify-between">
+          <p class="text-sm text-muted-foreground">
+            Showing {{ (executionsPage - 1) * executionsPerPage + 1 }} to {{ Math.min(executionsPage * executionsPerPage, executions.length) }} of {{ executions.length }} executions
+          </p>
+          <div class="flex items-center gap-2">
+            <button
+              @click="executionsPage--"
+              :disabled="executionsPage === 1"
+              class="px-3 py-1 text-sm border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span class="text-sm text-muted-foreground">
+              Page {{ executionsPage }} of {{ totalPages }}
+            </span>
+            <button
+              @click="executionsPage++"
+              :disabled="executionsPage === totalPages"
+              class="px-3 py-1 text-sm border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
     </template>
   </div>

@@ -14,6 +14,7 @@ interface RunRow {
   schedule_id: string | null;
   triggered_by_email: string | null;
   run_overrides: string | null;
+  metadata: string | null;
   started_at: string | null;
   finished_at: string | null;
   summary: string | null;
@@ -46,6 +47,7 @@ function rowToRun(row: RunRow): Run {
     scheduleId: row.schedule_id || undefined,
     triggeredByEmail: row.triggered_by_email || undefined,
     runOverrides: row.run_overrides ? JSON.parse(row.run_overrides) : undefined,
+    metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
     startedAt: row.started_at ? new Date(row.started_at) : undefined,
     finishedAt: row.finished_at ? new Date(row.finished_at) : undefined,
     summary: row.summary ? JSON.parse(row.summary) as RunSummary : undefined,
@@ -179,6 +181,7 @@ export function createRun(data: {
   scheduleId?: string | undefined;
   triggeredByEmail?: string | undefined;
   runOverrides?: Record<string, any> | undefined;
+  metadata?: import('../../types/index.js').RunMetadata | undefined;
   testIds: { testId: string; testKey: string }[];
 }): Run {
   const db = getDb();
@@ -188,8 +191,8 @@ export function createRun(data: {
   const transaction = db.transaction(() => {
     // Create the run
     db.prepare(`
-      INSERT INTO runs (id, status, trigger_type, environment, schedule_id, triggered_by_email, run_overrides, created_at)
-      VALUES (?, 'queued', ?, ?, ?, ?, ?, ?)
+      INSERT INTO runs (id, status, trigger_type, environment, schedule_id, triggered_by_email, run_overrides, metadata, created_at)
+      VALUES (?, 'queued', ?, ?, ?, ?, ?, ?, ?)
     `).run(
       runId,
       data.triggerType,
@@ -197,6 +200,7 @@ export function createRun(data: {
       data.scheduleId || null,
       data.triggeredByEmail || null,
       data.runOverrides ? JSON.stringify(data.runOverrides) : null,
+      data.metadata ? JSON.stringify(data.metadata) : null,
       now
     );
 

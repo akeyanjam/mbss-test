@@ -56,7 +56,7 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const body = req.body as CreateRunRequest;
-    const { testKeys, environment, userEmail, overrides } = body;
+    const { testKeys, environment, userEmail, overrides, metadata } = body;
 
     // Validate required fields
     if (!testKeys || !Array.isArray(testKeys) || testKeys.length === 0) {
@@ -104,6 +104,7 @@ router.post('/', (req, res) => {
       environment,
       triggeredByEmail: userEmail,
       runOverrides: overrides,
+      metadata,
       testIds: tests.map(t => ({ testId: t.id, testKey: t.testKey })),
     });
 
@@ -224,36 +225,6 @@ router.get('/:runId/tests/:testKey/logs', (req, res) => {
   } catch (error) {
     logger.error('Error fetching logs:', error);
     res.status(500).json({ error: 'Failed to fetch logs' });
-  }
-});
-
-/**
- * GET /api/runs/:runId/tests/:testKey/screenshot
- * Get the latest live screenshot for a running test
- */
-router.get('/:runId/tests/:testKey/screenshot', (req, res) => {
-  try {
-    const { runId, testKey } = req.params;
-
-    const test = getRunTest(runId, testKey);
-    if (!test) {
-      res.status(404).json({ error: 'Test not found in run' });
-      return;
-    }
-
-    // Build screenshot path
-    const artifactRoot = resolve(__dirname, '../..', config.artifactRoot);
-    const screenshotPath = join(artifactRoot, runId, testKey, 'live.jpg');
-
-    if (!existsSync(screenshotPath)) {
-      res.status(404).json({ error: 'No screenshot available' });
-      return;
-    }
-
-    res.sendFile(screenshotPath);
-  } catch (error) {
-    logger.error('Error fetching screenshot:', error);
-    res.status(500).json({ error: 'Failed to fetch screenshot' });
   }
 });
 

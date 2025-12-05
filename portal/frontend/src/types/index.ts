@@ -74,6 +74,13 @@ export interface RunTest {
   completedAt?: string
 }
 
+export interface RunMetadata {
+  selectionType: 'manual' | 'tags' | 'folder' | 'schedule'
+  tags?: string[]
+  folder?: string
+  testNames?: string[]
+}
+
 export interface Run {
   id: string
   status: RunStatus
@@ -82,6 +89,7 @@ export interface Run {
   scheduleId?: string
   triggeredByEmail?: string
   runOverrides?: Record<string, unknown>
+  metadata?: RunMetadata
   summary?: RunSummary
   createdAt: string
   startedAt?: string
@@ -125,6 +133,7 @@ export interface CreateRunRequest {
   environment: string
   userEmail: string
   overrides?: Record<string, unknown>
+  metadata?: RunMetadata
 }
 
 export interface CreateScheduleRequest {

@@ -66,15 +66,30 @@ async function fetchSchedules(showRefresh = false) {
 }
 
 async function handleToggle(schedule: Schedule) {
+  const originalState = schedule.enabled
   togglingIds.value.add(schedule.id)
+  
   try {
-    await toggleSchedule(schedule.id, !schedule.enabled)
-    schedule.enabled = !schedule.enabled
-    toast.success(schedule.enabled ? 'Schedule enabled' : 'Schedule disabled')
+    console.log('Toggling schedule:', schedule.id, 'from', originalState, 'to', !originalState)
+    const updatedSchedule = await toggleSchedule(schedule.id, !originalState)
+    console.log('Toggle response:', updatedSchedule)
+    
+    // Replace the entire array to trigger reactivity
+    const index = schedules.value.findIndex(s => s.id === schedule.id)
+    if (index !== -1) {
+      schedules.value = [
+        ...schedules.value.slice(0, index),
+        updatedSchedule,
+        ...schedules.value.slice(index + 1)
+      ]
+    }
+    
+    toast.success(updatedSchedule.enabled ? 'Schedule enabled' : 'Schedule disabled')
   } catch (e) {
     toast.error('Failed to toggle schedule', {
       description: e instanceof Error ? e.message : 'Unknown error',
     })
+    console.error('Toggle error:', e)
   } finally {
     togglingIds.value.delete(schedule.id)
   }
@@ -248,9 +263,9 @@ onMounted(() => {
             <!-- Right: Actions -->
             <div class="flex items-center gap-3 shrink-0">
               <Switch
-                :checked="schedule.enabled"
+                :model-value="schedule.enabled"
                 :disabled="togglingIds.has(schedule.id)"
-                @update:checked="handleToggle(schedule)"
+                @update:model-value="() => handleToggle(schedule)"
               />
               <Button
                 variant="ghost"

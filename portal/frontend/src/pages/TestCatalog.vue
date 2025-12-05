@@ -108,10 +108,27 @@ async function handleRunCreate(environment: string) {
 
   isCreatingRun.value = true
   try {
+    // Build metadata based on selection method
+    const metadata: import('@/types').RunMetadata = testsStore.selectedFolder
+      ? {
+          selectionType: 'folder',
+          folder: testsStore.selectedFolder,
+        }
+      : testsStore.selectedTags.length > 0
+      ? {
+          selectionType: 'tags',
+          tags: [...testsStore.selectedTags],
+        }
+      : {
+          selectionType: 'manual',
+          testNames: Array.from(testsStore.selectedTestKeys),
+        }
+
     const run = await createRun({
       testKeys: Array.from(testsStore.selectedTestKeys),
       environment,
       userEmail: userStore.email!,
+      metadata,
     })
 
     toast.success('Run created', {
