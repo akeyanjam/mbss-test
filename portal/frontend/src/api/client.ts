@@ -401,5 +401,51 @@ export async function getStatsByTag(options?: { days?: number; environment?: str
   })
 }
 
+export interface TestStats {
+  testKey: string
+  testName: string
+  overall: {
+    totalRuns: number
+    passed: number
+    failed: number
+    skipped: number
+    passRate: number
+    avgDuration: number
+  }
+  byEnvironment: Array<{
+    environment: string
+    totalRuns: number
+    passed: number
+    failed: number
+    passRate: number
+    avgDuration: number
+    lastRun: {
+      runId: string
+      status: string
+      date: string
+      duration: number | null
+    } | null
+  }>
+  recentRuns: Array<{
+    runId: string
+    environment: string
+    status: string
+    date: string
+    duration: number | null
+    errorMessage: string | null
+  }>
+  trend: {
+    current: number
+    previous: number
+    direction: 'up' | 'down' | 'stable'
+  }
+}
+
+export async function getTestStats(testKey: string, days = 30) {
+  return request<TestStats>(`/api/dashboard/test-stats/${encodeURIComponent(testKey)}`, {
+    params: { days },
+  })
+}
+
 // Export error class for handling
 export { ApiError }

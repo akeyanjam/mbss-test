@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
 import { useTestsStore, useUserStore } from '@/stores'
 import { createRun } from '@/api/client'
-import type { ScheduleSelector } from '@/types'
+import type { ScheduleSelector, TestDefinition } from '@/types'
 
 // Components
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,8 @@ import {
 import FolderTree from '@/components/catalog/FolderTree.vue'
 import TagFilter from '@/components/catalog/TagFilter.vue'
 import RunDialog from '@/components/catalog/RunDialog.vue'
+import TestEditPanel from '@/components/catalog/TestEditPanel.vue'
+import TestStatsPanel from '@/components/catalog/TestStatsPanel.vue'
 import TestStatusBadge from '@/components/shared/TestStatusBadge.vue'
 import {
   Play,
@@ -29,6 +31,8 @@ import {
   FolderOpen,
   Tag,
   X,
+  Settings2,
+  BarChart3,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -37,6 +41,14 @@ const userStore = useUserStore()
 
 const showRunDialog = ref(false)
 const isCreatingRun = ref(false)
+
+// Edit panel state
+const showEditPanel = ref(false)
+const editingTestKey = ref<string | null>(null)
+
+// Stats panel state
+const showStatsPanel = ref(false)
+const statsTestKey = ref<string | null>(null)
 
 onMounted(() => {
   testsStore.fetchTests()
@@ -157,6 +169,36 @@ function handleScheduleClick() {
       selector: JSON.stringify(scheduleSelector.value),
     },
   })
+}
+
+// Edit panel handlers
+function openEditPanel(testKey: string) {
+  editingTestKey.value = testKey
+  showEditPanel.value = true
+}
+
+function closeEditPanel() {
+  showEditPanel.value = false
+  editingTestKey.value = null
+}
+
+function handleTestSaved(updatedTest: TestDefinition) {
+  // Update the test in the store
+  const index = testsStore.tests.findIndex(t => t.testKey === updatedTest.testKey)
+  if (index !== -1) {
+    testsStore.tests[index] = updatedTest
+  }
+}
+
+// Stats panel handlers
+function openStatsPanel(testKey: string) {
+  statsTestKey.value = testKey
+  showStatsPanel.value = true
+}
+
+function closeStatsPanel() {
+  showStatsPanel.value = false
+  statsTestKey.value = null
 }
 </script>
 
@@ -310,12 +352,13 @@ function handleScheduleClick() {
             <div class="flex-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Test Name
             </div>
-            <div class="w-32 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <div class="max-w-[200px] text-xs font-medium text-muted-foreground uppercase tracking-wide">
               Tags
             </div>
             <div class="w-24 text-xs font-medium text-muted-foreground uppercase tracking-wide text-center">
               Status
             </div>
+            <div class="w-20"></div>
           </div>
 
           <!-- Test List -->
@@ -353,25 +396,38 @@ function handleScheduleClick() {
                     {{ test.folderPath }}
                   </p>
                 </div>
-                <div class="w-32 flex flex-wrap gap-1">
+                <div class="shrink-0 flex flex-wrap gap-1 max-w-[200px]">
                   <Badge
-                    v-for="tag in (test.tags || []).slice(0, 2)"
+                    v-for="tag in (test.tags || [])"
                     :key="tag"
                     variant="outline"
                     class="text-xs"
                   >
                     {{ tag }}
                   </Badge>
-                  <Badge
-                    v-if="test.tags && test.tags.length > 2"
-                    variant="outline"
-                    class="text-xs"
-                  >
-                    +{{ test.tags.length - 2 }}
-                  </Badge>
                 </div>
                 <div class="w-24 flex justify-center">
                   <TestStatusBadge status="pending" />
+                </div>
+                <div class="w-20 flex justify-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="h-8 w-8 p-0"
+                    @click.stop="openStatsPanel(test.testKey)"
+                    title="View test statistics"
+                  >
+                    <BarChart3 class="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="h-8 w-8 p-0"
+                    @click.stop="openEditPanel(test.testKey)"
+                    title="Edit test configuration"
+                  >
+                    <Settings2 class="w-4 h-4 text-muted-foreground" />
+                  </Button>
                 </div>
               </div>
             </div>
@@ -388,6 +444,21 @@ function handleScheduleClick() {
       :isLoading="isCreatingRun"
       @close="showRunDialog = false"
       @submit="handleRunCreate"
+    />
+
+    <!-- Test Edit Panel -->
+    <TestEditPanel
+      :open="showEditPanel"
+      :testKey="editingTestKey"
+      @close="closeEditPanel"
+      @saved="handleTestSaved"
+    />
+
+    <!-- Test Stats Panel -->
+    <TestStatsPanel
+      :open="showStatsPanel"
+      :testKey="statsTestKey"
+      @close="closeStatsPanel"
     />
   </div>
 </template>

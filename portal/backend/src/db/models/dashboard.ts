@@ -1,5 +1,4 @@
 import { getDb } from '../index.js';
-import type { Run, RunTest } from '../../types/index.js';
 
 // ============================================================================
 // Dashboard Statistics Types
@@ -827,4 +826,233 @@ export function getStatsByTag(options: {
 
   // Sort by execution count
   return tagStats.sort((a, b) => b.executions - a.executions);
+}
+
+// ============================================================================
+// Individual Test Statistics
+// ============================================================================
+
+export interface TestStats {
+  testKey: string;
+  testName: string;
+  overall: {
+    totalRuns: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+    passRate: number;
+    avgDuration: number;
+  };
+  byEnvironment: Array<{
+    environment: string;
+    totalRuns: number;
+    passed: number;
+    failed: number;
+    passRate: number;
+    avgDuration: number;
+    lastRun: {
+      runId: string;
+      status: string;
+      date: Date;
+      duration: number | null;
+    } | null;
+  }>;
+  recentRuns: Array<{
+    runId: string;
+    environment: string;
+    status: string;
+    date: Date;
+    duration: number | null;
+    errorMessage: string | null;
+  }>;
+  trend: {
+    current: number;
+    previous: number;
+    direction: 'up' | 'down' | 'stable';
+  };
+}
+
+/**
+ * Get statistics for a specific test
+ */
+export function getTestStats(testKey: string, days: number = 30): TestStats | null {
+  const db = getDb();
+
+  // Get test definition
+  const testDef = db.prepare(`
+    SELECT id, meta FROM test_definitions WHERE test_key = ?
+  `).get(testKey) as { id: string; meta: string } | undefined;
+
+  if (!testDef) {
+    return null;
+  }
+
+  const meta = JSON.parse(testDef.meta);
+
+  // Get overall stats
+  const overall = db.prepare(`
+    SELECT 
+      COUNT(*) as total_runs,
+      SUM(CASE WHEN rt.status = 'passed' THEN 1 ELSE 0 END) as passed,
+      SUM(CASE WHEN rt.status = 'failed' THEN 1 ELSE 0 END) as failed,
+      SUM(CASE WHEN rt.status = 'skipped' THEN 1 ELSE 0 END) as skipped,
+      AVG(rt.duration_ms) as avg_duration
+    FROM run_tests rt
+    JOIN runs r ON rt.run_id = r.id
+    WHERE rt.test_key = ?
+      AND r.finished_at >= date('now', '-' || ? || ' days')
+  `).get(testKey, days) as {
+    total_runs: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+    avg_duration: number | null;
+  };
+
+  // Get stats by environment
+  const envStats = db.prepare(`
+    SELECT 
+      r.environment,
+      COUNT(*) as total_runs,
+      SUM(CASE WHEN rt.status = 'passed' THEN 1 ELSE 0 END) as passed,
+      SUM(CASE WHEN rt.status = 'failed' THEN 1 ELSE 0 END) as failed,
+      AVG(rt.duration_ms) as avg_duration
+    FROM run_tests rt
+    JOIN runs r ON rt.run_id = r.id
+    WHERE rt.test_key = ?
+      AND r.finished_at >= date('now', '-' || ? || ' days')
+    GROUP BY r.environment
+    ORDER BY r.environment
+  `).all(testKey, days) as Array<{
+    environment: string;
+    total_runs: number;
+    passed: number;
+    failed: number;
+    avg_duration: number | null;
+  }>;
+
+  // Get last run per environment
+  const lastRunsPerEnv = db.prepare(`
+    SELECT 
+      r.id as run_id,
+      r.environment,
+      rt.status,
+      r.finished_at,
+      rt.duration_ms
+    FROM run_tests rt
+    JOIN runs r ON rt.run_id = r.id
+    WHERE rt.test_key = ?
+      AND r.finished_at IS NOT NULL
+    ORDER BY r.finished_at DESC
+  `).all(testKey) as Array<{
+    run_id: string;
+    environment: string;
+    status: string;
+    finished_at: string;
+    duration_ms: number | null;
+  }>;
+
+  // Build last run map (first occurrence per env is the latest)
+  const lastRunMap = new Map<string, typeof lastRunsPerEnv[0]>();
+  for (const run of lastRunsPerEnv) {
+    if (!lastRunMap.has(run.environment)) {
+      lastRunMap.set(run.environment, run);
+    }
+  }
+
+  // Get recent runs (last 10)
+  const recentRuns = db.prepare(`
+    SELECT 
+      r.id as run_id,
+      r.environment,
+      rt.status,
+      r.finished_at,
+      rt.duration_ms,
+      rt.error_message
+    FROM run_tests rt
+    JOIN runs r ON rt.run_id = r.id
+    WHERE rt.test_key = ?
+      AND r.finished_at IS NOT NULL
+    ORDER BY r.finished_at DESC
+    LIMIT 10
+  `).all(testKey) as Array<{
+    run_id: string;
+    environment: string;
+    status: string;
+    finished_at: string;
+    duration_ms: number | null;
+    error_message: string | null;
+  }>;
+
+  // Calculate trend (compare current period vs previous period)
+  const currentPeriodPassRate = overall.total_runs > 0
+    ? (overall.passed / overall.total_runs) * 100
+    : 0;
+
+  const previousPeriod = db.prepare(`
+    SELECT 
+      COUNT(*) as total_runs,
+      SUM(CASE WHEN rt.status = 'passed' THEN 1 ELSE 0 END) as passed
+    FROM run_tests rt
+    JOIN runs r ON rt.run_id = r.id
+    WHERE rt.test_key = ?
+      AND r.finished_at >= date('now', '-' || ? || ' days')
+      AND r.finished_at < date('now', '-' || ? || ' days')
+  `).get(testKey, days * 2, days) as { total_runs: number; passed: number };
+
+  const previousPeriodPassRate = previousPeriod.total_runs > 0
+    ? (previousPeriod.passed / previousPeriod.total_runs) * 100
+    : 0;
+
+  const trendDiff = currentPeriodPassRate - previousPeriodPassRate;
+  let trendDirection: 'up' | 'down' | 'stable' = 'stable';
+  if (trendDiff > 5) trendDirection = 'up';
+  else if (trendDiff < -5) trendDirection = 'down';
+
+  return {
+    testKey,
+    testName: meta.friendlyName || testKey,
+    overall: {
+      totalRuns: overall.total_runs || 0,
+      passed: overall.passed || 0,
+      failed: overall.failed || 0,
+      skipped: overall.skipped || 0,
+      passRate: overall.total_runs > 0
+        ? Math.round((overall.passed / overall.total_runs) * 1000) / 10
+        : 0,
+      avgDuration: Math.round(overall.avg_duration || 0),
+    },
+    byEnvironment: envStats.map(env => {
+      const lastRun = lastRunMap.get(env.environment);
+      return {
+        environment: env.environment,
+        totalRuns: env.total_runs,
+        passed: env.passed,
+        failed: env.failed,
+        passRate: env.total_runs > 0
+          ? Math.round((env.passed / env.total_runs) * 1000) / 10
+          : 0,
+        avgDuration: Math.round(env.avg_duration || 0),
+        lastRun: lastRun ? {
+          runId: lastRun.run_id,
+          status: lastRun.status,
+          date: new Date(lastRun.finished_at),
+          duration: lastRun.duration_ms,
+        } : null,
+      };
+    }),
+    recentRuns: recentRuns.map(run => ({
+      runId: run.run_id,
+      environment: run.environment,
+      status: run.status,
+      date: new Date(run.finished_at),
+      duration: run.duration_ms,
+      errorMessage: run.error_message,
+    })),
+    trend: {
+      current: Math.round(currentPeriodPassRate * 10) / 10,
+      previous: Math.round(previousPeriodPassRate * 10) / 10,
+      direction: trendDirection,
+    },
+  };
 }

@@ -9,6 +9,7 @@ import {
   getFlakyTests,
   getTestPerformance,
   getStatsByTag,
+  getTestStats,
 } from '../db/models/dashboard.js';
 
 const router = Router();
@@ -265,6 +266,38 @@ router.get('/stats-by-tag', (req, res) => {
   } catch (error) {
     logger.error('Error fetching stats by tag:', error);
     res.status(500).json({ error: 'Failed to fetch stats by tag' });
+  }
+});
+
+/**
+ * GET /api/dashboard/test-stats/:testKey
+ * Get statistics for a specific test
+ * Query params:
+ *   - days: number of days to look back (default 30)
+ */
+router.get('/test-stats/:testKey', (req, res) => {
+  try {
+    const { testKey } = req.params;
+    const days = req.query.days 
+      ? parseInt(req.query.days as string) 
+      : 30;
+
+    if (days < 1 || days > 365) {
+      res.status(400).json({ error: 'days must be between 1 and 365' });
+      return;
+    }
+
+    const stats = getTestStats(testKey, days);
+
+    if (!stats) {
+      res.status(404).json({ error: 'Test not found' });
+      return;
+    }
+
+    res.json(stats);
+  } catch (error) {
+    logger.error('Error fetching test stats:', error);
+    res.status(500).json({ error: 'Failed to fetch test stats' });
   }
 });
 
