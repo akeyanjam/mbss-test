@@ -86,7 +86,7 @@ function handleDaysChange(days: number) {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-[1600px]">
+  <div class="space-y-6 max-w-[1400px]">
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>

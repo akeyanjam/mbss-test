@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RunMetadata } from '@/types'
-import { Tag, Folder, ListChecks, Calendar } from 'lucide-vue-next'
+import { Tag, Folder, ListChecks } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
 
 defineProps<{
@@ -36,10 +36,14 @@ defineProps<{
       </span>
     </div>
 
-    <!-- Schedule -->
-    <div v-else-if="metadata.selectionType === 'schedule'" class="flex items-center gap-1.5">
-      <Calendar class="w-3.5 h-3.5 text-muted-foreground" />
-      <span class="text-muted-foreground">Scheduled</span>
+    <!-- Schedule with test names -->
+    <div v-else-if="metadata.selectionType === 'schedule' && metadata.testNames && metadata.testNames.length > 0" class="flex items-center gap-1.5">
+      <ListChecks class="w-3.5 h-3.5 text-muted-foreground" />
+      <span class="text-muted-foreground">Tests:</span>
+      <span class="text-xs text-foreground">{{ metadata.testNames.length }} selected</span>
+      <span v-if="metadata.testNames.length <= 3" class="text-xs text-muted-foreground">
+        ({{ metadata.testNames.join(', ') }})
+      </span>
     </div>
   </div>
 </template>

@@ -195,16 +195,16 @@ onMounted(() => {
     </div>
 
     <!-- Runs List -->
-    <div v-else class="space-y-2">
+    <div v-else class="space-y-3">
         <button
           v-for="run in filteredRuns"
           :key="run.id"
-          class="w-full text-left p-3 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
+          class="w-full text-left p-4 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors"
           @click="navigateToRun(run.id)"
         >
-          <div class="flex items-center justify-between gap-4">
-            <!-- Left: Status & Badges -->
-            <div class="flex items-center gap-2 shrink-0">
+          <!-- Row 1: Status, Badges, and Metadata -->
+          <div class="flex items-center justify-between gap-4 mb-3">
+            <div class="flex items-center gap-3">
               <RunStatusBadge :status="run.status" />
               <EnvironmentBadge :code="run.environment" />
               <span
@@ -214,46 +214,44 @@ onMounted(() => {
                 <Calendar class="w-3 h-3" />
                 Scheduled
               </span>
-            </div>
-
-            <!-- Center: Summary & Metadata -->
-            <div class="flex-1 min-w-0 flex items-center gap-6">
-              <!-- Summary -->
-              <div v-if="run.summary" class="flex items-center gap-3 text-sm">
-                <span class="text-foreground font-medium">
-                  {{ run.summary.totalTests }} tests
-                </span>
-                <span class="text-green-600">{{ run.summary.passed }} passed</span>
-                <span v-if="run.summary.failed > 0" class="text-red-600">
-                  {{ run.summary.failed }} failed
-                </span>
-                <span v-if="run.summary.skipped > 0" class="text-gray-500">
-                  {{ run.summary.skipped }} skipped
-                </span>
-              </div>
-
-              <!-- Metadata -->
-              <div v-if="run.metadata" class="shrink-0">
+              <div v-if="run.metadata" class="ml-2">
                 <RunMetadataDisplay :metadata="run.metadata" />
               </div>
             </div>
+            <ChevronRight class="w-5 h-5 text-muted-foreground shrink-0" />
+          </div>
 
-            <!-- Right: Meta Info & Arrow -->
-            <div class="flex items-center gap-4 shrink-0">
-              <div class="flex items-center gap-3 text-xs text-muted-foreground">
-                <span class="flex items-center gap-1">
-                  <Clock class="w-3 h-3" />
-                  {{ formatDate(run.createdAt) }}
-                </span>
-                <span v-if="run.summary?.durationMs">
-                  {{ formatDuration(run.summary.durationMs) }}
-                </span>
-                <span v-if="run.triggeredByEmail" class="flex items-center gap-1">
-                  <User class="w-3 h-3" />
-                  {{ run.triggeredByEmail }}
-                </span>
-              </div>
-              <ChevronRight class="w-5 h-5 text-muted-foreground" />
+          <!-- Row 2: Summary and Time Info -->
+          <div class="flex items-center justify-between gap-4">
+            <!-- Left: Test Summary -->
+            <div v-if="run.summary" class="flex items-center gap-4 text-sm">
+              <span class="text-foreground font-medium">
+                {{ run.summary.totalTests }} tests
+              </span>
+              <span class="text-green-600 font-medium">
+                {{ run.summary.passed }} passed
+              </span>
+              <span v-if="run.summary.failed > 0" class="text-red-600 font-medium">
+                {{ run.summary.failed }} failed
+              </span>
+              <span v-if="run.summary.skipped > 0" class="text-muted-foreground">
+                {{ run.summary.skipped }} skipped
+              </span>
+            </div>
+
+            <!-- Right: Time and User Info -->
+            <div class="flex items-center gap-4 text-xs text-muted-foreground shrink-0">
+              <span class="flex items-center gap-1.5">
+                <Clock class="w-3.5 h-3.5" />
+                {{ formatDate(run.createdAt) }}
+              </span>
+              <span v-if="run.summary?.durationMs" class="font-medium">
+                {{ formatDuration(run.summary.durationMs) }}
+              </span>
+              <span v-if="run.triggeredByEmail" class="flex items-center gap-1.5">
+                <User class="w-3.5 h-3.5" />
+                {{ run.triggeredByEmail }}
+              </span>
             </div>
           </div>
         </button>

@@ -117,8 +117,9 @@ function handleLogout() {
     <!-- Main Content Area - Scrollable -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <!-- Top Bar -->
-      <header class="h-16 border-b border-border bg-card shrink-0 px-6 flex items-center">
-        <h1 class="text-xl font-semibold text-foreground">MBSS Test Portal</h1>
+      <header class="h-16 border-b border-border bg-card shrink-0 px-6 flex items-center justify-between">
+        <h1 class="text-xl font-semibold text-foreground">BofA POS Automation Test Dashboard</h1>
+        <img src="/logo.svg" alt="Bank of America" class="h-6 w-auto" />
       </header>
 
       <!-- Main Content - Scrollable -->

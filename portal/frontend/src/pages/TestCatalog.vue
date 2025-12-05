@@ -203,7 +203,7 @@ function closeStatsPanel() {
 </script>
 
 <template>
-  <div class="flex flex-col h-[calc(100vh-8rem)]">
+  <div class="flex flex-col h-[calc(100vh-8rem)] max-w-[1400px]">
     <!-- Page Header -->
     <div class="flex items-center justify-between mb-6">
       <div>
